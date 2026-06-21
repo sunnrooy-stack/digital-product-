@@ -49,7 +49,7 @@ export default function CreateProductPage() {
 
     try {
       // 1. Fetch secure signature from backend
-      const sigRes = await fetch("/api/upload/signature");
+      const sigRes = await fetch("http://localhost:3000/api/upload/signature");
       if (!sigRes.ok) throw new Error("Failed to get upload signature");
       const { timestamp, signature } = await sigRes.json();
 
