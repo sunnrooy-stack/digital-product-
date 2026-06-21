@@ -21,7 +21,7 @@ export default function CategoriesPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch("http://localhost:3000/api/categories")
+    fetch("https://digital-product-store-l9r1.onrender.com/api/categories")
       .then((res) => res.json())
       .then((data) => setCategories(data))
       .catch((err) => console.error("Failed to load categories:", err));
@@ -41,7 +41,7 @@ export default function CategoriesPage() {
     try {
       if (editingId) {
         const updatedCat = { id: editingId, name, slug, parentId: parentId || null, metaTitle, metaDescription };
-        await fetch("http://localhost:3000/api/categories", {
+        await fetch("https://digital-product-store-l9r1.onrender.com/api/categories", {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(updatedCat),
@@ -50,7 +50,7 @@ export default function CategoriesPage() {
         setEditingId(null);
       } else {
         const newCat = { name, slug, parentId: parentId || null, metaTitle, metaDescription };
-        const res = await fetch("http://localhost:3000/api/categories", {
+        const res = await fetch("https://digital-product-store-l9r1.onrender.com/api/categories", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(newCat),
@@ -84,7 +84,7 @@ export default function CategoriesPage() {
 
   const handleDelete = async (id: string) => {
     try {
-      await fetch(`http://localhost:3000/api/categories?id=${id}`, { method: "DELETE" });
+      await fetch(`https://digital-product-store-l9r1.onrender.com/api/categories?id=${id}`, { method: "DELETE" });
       setCategories(categories.filter((c) => c.id !== id));
     } catch (err) {
       console.error("Failed to delete category:", err);
