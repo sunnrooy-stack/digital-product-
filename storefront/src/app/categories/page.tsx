@@ -10,8 +10,8 @@ export default function CategoriesPage() {
 
   useEffect(() => {
     Promise.all([
-      fetch("/api/categories").then(res => res.json()),
-      fetch("/api/products").then(res => res.json())
+      fetch("https://digital-product-1-l3qr.onrender.com/api/categories").then(res => res.json()),
+      fetch("https://digital-product-1-l3qr.onrender.com/api/products").then(res => res.json())
     ]).then(([catsData, prodsData]) => {
       if (Array.isArray(catsData)) setCategories(catsData);
       if (Array.isArray(prodsData)) setProducts(prodsData);

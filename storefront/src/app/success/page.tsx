@@ -19,7 +19,7 @@ function SuccessContent() {
         if (parsed.payment_id === paymentId) {
           // Fetch latest product data to guarantee we have the fileUrls,
           // even if the cart item was cached before we added fileUrls support.
-          fetch("/api/products")
+          fetch("https://digital-product-1-l3qr.onrender.com/api/products")
             .then((res) => res.json())
             .then((products) => {
               const enrichedItems = parsed.items.map((cartItem: any) => {

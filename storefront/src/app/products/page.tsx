@@ -44,7 +44,7 @@ function ProductsContent() {
   const [storeCategories, setStoreCategories] = useState<any[]>([]);
 
   useEffect(() => {
-    fetch(`/api/products?t=${new Date().getTime()}`, { cache: "no-store" })
+    fetch(`https://digital-product-1-l3qr.onrender.com/api/products?t=${new Date().getTime()}`, { cache: "no-store" })
       .then((res) => res.json())
       .then((data) => {
         if (Array.isArray(data)) {
@@ -57,7 +57,7 @@ function ProductsContent() {
         setLoading(false);
       });
 
-    fetch("/api/categories")
+    fetch("https://digital-product-1-l3qr.onrender.com/api/categories")
       .then((res) => res.json())
       .then((data) => {
         if (Array.isArray(data)) {

@@ -40,7 +40,7 @@ function ProductsContent() {
   const [products, setProducts] = useState<Product[]>([]);
 
   const refreshProducts = () => {
-    fetch("https://digital-product-store-l9r1.onrender.com/api/products")
+    fetch("https://digital-product-1-l3qr.onrender.com/api/products")
       .then((res) => res.json())
       .then((data) => {
         if (Array.isArray(data)) {
@@ -74,7 +74,7 @@ function ProductsContent() {
   const [uploadingFiles, setUploadingFiles] = useState(false);
 
   useEffect(() => {
-    fetch("https://digital-product-store-l9r1.onrender.com/api/categories")
+    fetch("https://digital-product-1-l3qr.onrender.com/api/categories")
       .then((res) => res.json())
       .then((data) => {
         if (Array.isArray(data)) {
@@ -139,7 +139,7 @@ function ProductsContent() {
       views: 0,
       revenue: 0,
     };
-    fetch("https://digital-product-store-l9r1.onrender.com/api/products", {
+    fetch("https://digital-product-1-l3qr.onrender.com/api/products", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(duplicated),
@@ -149,7 +149,7 @@ function ProductsContent() {
   };
 
   const handleDelete = (id: string) => {
-    fetch(`https://digital-product-store-l9r1.onrender.com/api/products?id=${id}`, {
+    fetch(`https://digital-product-1-l3qr.onrender.com/api/products?id=${id}`, {
       method: "DELETE",
     })
       .then(() => refreshProducts())
@@ -160,7 +160,7 @@ function ProductsContent() {
     const target = products.find((p) => p.id === id);
     if (!target) return;
     const updated = { ...target, isFeatured: !target.isFeatured };
-    fetch("https://digital-product-store-l9r1.onrender.com/api/products", {
+    fetch("https://digital-product-1-l3qr.onrender.com/api/products", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(updated),
@@ -196,7 +196,7 @@ function ProductsContent() {
         metaDescription: formMetaDesc,
       };
 
-      fetch("https://digital-product-store-l9r1.onrender.com/api/products", {
+      fetch("https://digital-product-1-l3qr.onrender.com/api/products", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(updatedProduct),
@@ -229,7 +229,7 @@ function ProductsContent() {
         revenue: 0,
       };
 
-      fetch("https://digital-product-store-l9r1.onrender.com/api/products", {
+      fetch("https://digital-product-1-l3qr.onrender.com/api/products", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(newProduct),

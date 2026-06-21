@@ -26,7 +26,7 @@ export default function CreateProductPage() {
   const [adminCategories, setAdminCategories] = useState<any[]>([]);
 
   useEffect(() => {
-    fetch("https://digital-product-store-l9r1.onrender.com/api/categories")
+    fetch("https://digital-product-1-l3qr.onrender.com/api/categories")
       .then((res) => res.json())
       .then((data) => {
         if (Array.isArray(data)) {
@@ -49,7 +49,7 @@ export default function CreateProductPage() {
 
     try {
       // 1. Fetch secure signature from backend
-      const sigRes = await fetch("https://digital-product-store-l9r1.onrender.com/api/upload/signature");
+      const sigRes = await fetch("https://digital-product-1-l3qr.onrender.com/api/upload/signature");
       if (!sigRes.ok) throw new Error("Failed to get upload signature");
       const { timestamp, signature } = await sigRes.json();
 
@@ -104,7 +104,7 @@ export default function CreateProductPage() {
     };
 
     try {
-      await fetch("https://digital-product-store-l9r1.onrender.com/api/products", {
+      await fetch("https://digital-product-1-l3qr.onrender.com/api/products", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(newProduct),

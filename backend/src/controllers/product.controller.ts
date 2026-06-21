@@ -29,11 +29,29 @@ export const getProductById = async (req: Request, res: Response) => {
   }
 };
 
-export const createProduct = async (req: AuthRequest, res: Response) => {
+export const createProduct = async (req: Request, res: Response) => {
   try {
-    const { title, description, price, category, tags, coverImage, previewMedia, fileUrls } = req.body;
+    const { title, description, price, category, tags, coverImage, previewMedia, fileUrls, status } = req.body;
     
-    if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
+    // Create or find a dummy admin user if none exists
+    let sellerId = "dummy_admin_id";
+    const existingUser = await prisma.user.findFirst();
+    if (existingUser) {
+      sellerId = existingUser.id;
+    } else {
+      const newUser = await prisma.user.create({
+        data: {
+          firebaseUid: "dummy_admin_uid_" + Date.now(),
+          email: "admin@example.com",
+          name: "Admin",
+          role: "ADMIN"
+        }
+      });
+      sellerId = newUser.id;
+    }
+
+    const productStatus = status === "Draft" ? "PENDING_APPROVAL" : "APPROVED";
+    const isPublished = productStatus === "APPROVED";
 
     const product = await prisma.product.create({
       data: {
@@ -42,10 +60,12 @@ export const createProduct = async (req: AuthRequest, res: Response) => {
         price: parseFloat(price),
         category,
         tags: tags || [],
-        coverImage,
+        coverImage: coverImage || "",
         previewMedia: previewMedia || [],
         fileUrls: fileUrls || [],
-        sellerId: req.user.id,
+        status: productStatus,
+        isPublished: isPublished,
+        sellerId: sellerId,
       },
     });
 
@@ -56,17 +76,13 @@ export const createProduct = async (req: AuthRequest, res: Response) => {
   }
 };
 
-export const updateProduct = async (req: AuthRequest, res: Response) => {
+export const updateProduct = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const updateData = req.body;
 
-    if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
-
-    // Verify ownership
     const product = await prisma.product.findUnique({ where: { id } });
     if (!product) return res.status(404).json({ error: 'Product not found' });
-    if (product.sellerId !== req.user.id) return res.status(403).json({ error: 'Forbidden: You do not own this product' });
 
     const updatedProduct = await prisma.product.update({
       where: { id },
@@ -79,17 +95,12 @@ export const updateProduct = async (req: AuthRequest, res: Response) => {
   }
 };
 
-export const deleteProduct = async (req: AuthRequest, res: Response) => {
+export const deleteProduct = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
 
-    if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
-
     const product = await prisma.product.findUnique({ where: { id } });
     if (!product) return res.status(404).json({ error: 'Product not found' });
-    if (product.sellerId !== req.user.id && req.user.role !== 'ADMIN') {
-      return res.status(403).json({ error: 'Forbidden: You do not have permission' });
-    }
 
     await prisma.product.delete({ where: { id } });
     res.status(200).json({ message: 'Product deleted successfully' });

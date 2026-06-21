@@ -27,7 +27,7 @@ export default function ProductDetailPage() {
   useEffect(() => {
     if (!id) return;
     
-    fetch(`/api/products?t=${new Date().getTime()}`, { cache: "no-store" })
+    fetch(`https://digital-product-1-l3qr.onrender.com/api/products?t=${new Date().getTime()}`, { cache: "no-store" })
       .then((res) => res.json())
       .then((data) => {
         if (Array.isArray(data)) {

@@ -23,7 +23,7 @@ export default function Home() {
 
   // Fetch real-time products list and categories
   useEffect(() => {
-    fetch(`/api/products?t=${new Date().getTime()}`, { cache: "no-store" })
+    fetch(`https://digital-product-1-l3qr.onrender.com/api/products?t=${new Date().getTime()}`, { cache: "no-store" })
       .then((res) => res.json())
       .then((data) => {
         if (Array.isArray(data)) {
@@ -43,7 +43,7 @@ export default function Home() {
         setLoadingProducts(false);
       });
 
-    fetch("/api/categories")
+    fetch("https://digital-product-1-l3qr.onrender.com/api/categories")
       .then((res) => res.json())
       .then((data) => {
         if (Array.isArray(data)) {
