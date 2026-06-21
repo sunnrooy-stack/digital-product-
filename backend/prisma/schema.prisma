@@ -1,0 +1,161 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  SELLER
+  ADMIN
+}
+
+enum OrderStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+enum ProductStatus {
+  PENDING_APPROVAL
+  APPROVED
+  REJECTED
+}
+
+model User {
+  id            String    @id @default(uuid())
+  firebaseUid   String    @unique
+  email         String    @unique
+  name          String
+  avatar        String?
+  role          Role      @default(USER)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  products      Product[] // Products sold by this user (if SELLER)
+  orders        Order[]   // Orders placed by this user
+  reviews       Review[]
+  wishlist      Wishlist[]
+  supportTickets SupportTicket[]
+  earnings      Earning[]
+}
+
+model Product {
+  id            String    @id @default(uuid())
+  title         String
+  description   String
+  price         Float
+  category      String
+  tags          String[]
+  coverImage    String
+  previewMedia  String[]  // Array of image/video URLs
+  fileUrls      String[]  // The actual digital products (ZIP, PDF, etc)
+  status        ProductStatus @default(PENDING_APPROVAL)
+  isPublished   Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  sellerId      String
+  seller        User      @relation(fields: [sellerId], references: [id])
+
+  orders        OrderItem[]
+  reviews       Review[]
+  wishlistedBy  Wishlist[]
+}
+
+model Order {
+  id            String    @id @default(uuid())
+  orderNumber   String    @unique
+  totalAmount   Float
+  status        OrderStatus @default(PENDING)
+  paymentId     String?   // Razorpay payment ID
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  userId        String
+  user          User      @relation(fields: [userId], references: [id])
+
+  items         OrderItem[]
+  refundRequest RefundRequest?
+}
+
+model OrderItem {
+  id            String    @id @default(uuid())
+  priceAtPurchase Float
+
+  orderId       String
+  order         Order     @relation(fields: [orderId], references: [id])
+
+  productId     String
+  product       Product   @relation(fields: [productId], references: [id])
+}
+
+model Review {
+  id            String    @id @default(uuid())
+  rating        Int
+  comment       String?
+  createdAt     DateTime  @default(now())
+
+  userId        String
+  user          User      @relation(fields: [userId], references: [id])
+
+  productId     String
+  product       Product   @relation(fields: [productId], references: [id])
+}
+
+model Wishlist {
+  id            String    @id @default(uuid())
+  createdAt     DateTime  @default(now())
+
+  userId        String
+  user          User      @relation(fields: [userId], references: [id])
+
+  productId     String
+  product       Product   @relation(fields: [productId], references: [id])
+
+  @@unique([userId, productId])
+}
+
+model Coupon {
+  id            String    @id @default(uuid())
+  code          String    @unique
+  discountPct   Float     // Percentage discount
+  validUntil    DateTime
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+}
+
+model RefundRequest {
+  id            String    @id @default(uuid())
+  reason        String
+  status        ProductStatus @default(PENDING_APPROVAL) // Reusing status enum for simplicity: PENDING, APPROVED, REJECTED
+  createdAt     DateTime  @default(now())
+
+  orderId       String    @unique
+  order         Order     @relation(fields: [orderId], references: [id])
+}
+
+model SupportTicket {
+  id            String    @id @default(uuid())
+  subject       String
+  message       String
+  status        String    @default("OPEN") // OPEN, IN_PROGRESS, RESOLVED
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  userId        String
+  user          User      @relation(fields: [userId], references: [id])
+}
+
+model Earning {
+  id            String    @id @default(uuid())
+  amount        Float
+  createdAt     DateTime  @default(now())
+
+  sellerId      String
+  seller        User      @relation(fields: [sellerId], references: [id])
+}

@@ -1,0 +1,94 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+
+  --color-border: var(--border);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+}
+
+@layer base {
+  :root {
+    --background: #ffffff;
+    --foreground: #09090b;
+
+    --primary: #4f46e5;
+    --primary-foreground: #ffffff;
+
+    --card: #ffffff;
+    --card-foreground: #09090b;
+
+    --border: #e4e4e7;
+    --muted: #f4f4f5;
+    --muted-foreground: #71717a;
+    
+    --accent: #f4f4f5;
+    --accent-foreground: #18181b;
+
+    --radius: 0.75rem;
+  }
+
+  .dark {
+    --background: #050505;
+    --foreground: #fafafa;
+
+    --primary: #6366f1;
+    --primary-foreground: #ffffff;
+
+    --card: #0a0a0a;
+    --card-foreground: #fafafa;
+
+    --border: #27272a;
+    --muted: #27272a;
+    --muted-foreground: #a1a1aa;
+    
+    --accent: #27272a;
+    --accent-foreground: #fafafa;
+  }
+
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: Arial, Helvetica, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+/* Custom Utilities for Premium Look */
+@layer utilities {
+  .glass-panel {
+    background: rgba(18, 18, 18, 0.6);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+}
+
+@theme inline {
+  --font-sans: var(--font-sans);
+  --color-ring: var(--primary);
+  --color-input: var(--border);
+  --color-destructive: oklch(0.577 0.245 27.325);
+  --color-popover: var(--card);
+  --color-popover-foreground: var(--card-foreground);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+}
