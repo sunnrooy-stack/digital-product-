@@ -58,7 +58,7 @@ function ProductsContent() {
   const [formId, setFormId] = useState<string | null>(null);
   const [formTitle, setFormTitle] = useState("");
   const [formDesc, setFormDesc] = useState("");
-  const [formPrice, setFormPrice] = useState(0);
+  const [formPrice, setFormPrice] = useState<number | string>("");
   const [formCategory, setFormCategory] = useState("");
   const [formTags, setFormTags] = useState("");
   const [formCover, setFormCover] = useState("");
@@ -237,7 +237,7 @@ function ProductsContent() {
     setFormId(null);
     setFormTitle("");
     setFormDesc("");
-    setFormPrice(0);
+    setFormPrice("");
     setFormCategory("Design Templates");
     setFormTags("");
     setFormCover("");
@@ -490,7 +490,7 @@ function ProductsContent() {
                     required
                     placeholder="49"
                     value={formPrice}
-                    onChange={(e) => setFormPrice(Number(e.target.value))}
+                    onChange={(e) => setFormPrice(e.target.value)}
                     className="w-full bg-background border border-border rounded-xl px-4 py-2.5 text-foreground focus:ring-2 focus:ring-primary focus:outline-none"
                   />
                 </div>
