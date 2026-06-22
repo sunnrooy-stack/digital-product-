@@ -121,7 +121,7 @@ export default function Home() {
                   className="glass-panel rounded-2xl p-4 transition-all hover:scale-[1.02] cursor-pointer group flex flex-col justify-between"
                 >
                   <div>
-                    <a href={`/product?id=${product.id}`}>
+                    <a href={`/product/${product.id}`}>
                       <div className={`aspect-video w-full rounded-xl bg-gradient-to-br ${gradients[gradientIndex]} mb-4 flex items-center justify-center opacity-80 group-hover:opacity-100 transition-opacity`}>
                       {product.coverImage ? (
                         <img src={product.coverImage} alt={product.title} className="w-full h-full object-cover rounded-xl" />
