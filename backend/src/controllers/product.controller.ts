@@ -31,7 +31,7 @@ export const getProductById = async (req: Request, res: Response) => {
 
 export const createProduct = async (req: Request, res: Response) => {
   try {
-    const { title, description, price, category, tags, coverImage, previewMedia, fileUrls, status } = req.body;
+    const { title, description, price, category, tags, coverImage, previewMedia, fileUrls, status, isFeatured } = req.body;
     
     // Create or find a dummy admin user if none exists
     let sellerId = "dummy_admin_id";
@@ -65,6 +65,7 @@ export const createProduct = async (req: Request, res: Response) => {
         fileUrls: fileUrls || [],
         status: productStatus,
         isPublished: isPublished,
+        isFeatured: isFeatured !== undefined ? isFeatured : true,
         sellerId: sellerId,
       },
     });
@@ -107,5 +108,17 @@ export const deleteProduct = async (req: Request, res: Response) => {
     res.status(200).json({ message: 'Product deleted successfully' });
   } catch (error) {
     res.status(500).json({ error: 'Failed to delete product' });
+  }
+};
+
+export const fixFeaturedProducts = async (req: Request, res: Response) => {
+  try {
+    const result = await prisma.product.updateMany({
+      data: { isFeatured: true },
+    });
+    res.status(200).json({ message: 'Featured products fixed', count: result.count });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to fix featured products' });
   }
 };
