@@ -149,7 +149,7 @@ function ProductsContent() {
   };
 
   const handleDelete = (id: string) => {
-    fetch(`https://digital-product-1-l3qr.onrender.com/api/products?id=${id}`, {
+    fetch(`https://digital-product-1-l3qr.onrender.com/api/products/${id}`, {
       method: "DELETE",
     })
       .then(() => refreshProducts())
@@ -160,7 +160,7 @@ function ProductsContent() {
     const target = products.find((p) => p.id === id);
     if (!target) return;
     const updated = { ...target, isFeatured: !target.isFeatured };
-    fetch("https://digital-product-1-l3qr.onrender.com/api/products", {
+    fetch(`https://digital-product-1-l3qr.onrender.com/api/products/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(updated),
@@ -196,7 +196,7 @@ function ProductsContent() {
         metaDescription: formMetaDesc,
       };
 
-      fetch("https://digital-product-1-l3qr.onrender.com/api/products", {
+      fetch(`https://digital-product-1-l3qr.onrender.com/api/products/${formId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(updatedProduct),
