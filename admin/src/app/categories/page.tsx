@@ -23,7 +23,13 @@ export default function CategoriesPage() {
   useEffect(() => {
     fetch("https://digital-product-1-l3qr.onrender.com/api/categories")
       .then((res) => res.json())
-      .then((data) => setCategories(data))
+      .then((data) => {
+        if (Array.isArray(data)) {
+          setCategories(data);
+        } else {
+          console.error("Categories API returned non-array:", data);
+        }
+      })
       .catch((err) => console.error("Failed to load categories:", err));
   }, []);
 

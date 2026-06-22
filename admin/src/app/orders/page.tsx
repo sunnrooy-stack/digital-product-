@@ -7,13 +7,15 @@ export default function AdminOrders() {
 
   useEffect(() => {
     fetch("https://digital-product-1-l3qr.onrender.com/api/orders")
-      .then(res => res.json())
-      .then(data => {
+      .then((res) => res.json())
+      .then((data) => {
         if (Array.isArray(data)) {
           setOrders(data);
+        } else {
+          console.error("Orders API returned non-array:", data);
         }
       })
-      .catch(err => console.error("Failed to load orders:", err));
+      .catch((err) => console.error("Failed to load orders:", err));
   }, []);
 
   return (
