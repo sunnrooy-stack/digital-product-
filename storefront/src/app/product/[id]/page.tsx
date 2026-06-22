@@ -13,7 +13,7 @@ export async function generateStaticParams() {
   } catch (e) {
     // ignore
   }
-  return [];
+  return [{ id: "1" }];
 }
 
 export default function Page({ params }: { params: { id: string } }) {
