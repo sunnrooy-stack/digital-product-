@@ -6,7 +6,7 @@ export default function UsersAdmin() {
   const [users, setUsers] = useState<any[]>([]);
 
   useEffect(() => {
-    fetch("https://digital-product-store-l9r1.onrender.com/api/users")
+    fetch("https://digital-product-1-l3qr.onrender.com/api/users")
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) {

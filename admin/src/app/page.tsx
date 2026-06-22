@@ -16,7 +16,7 @@ export default function AdminDashboard() {
   const [topProducts, setTopProducts] = useState<any[]>([]);
 
   useEffect(() => {
-    fetch("https://digital-product-store-l9r1.onrender.com/api/products")
+    fetch("https://digital-product-1-l3qr.onrender.com/api/products")
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) {

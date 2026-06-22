@@ -6,7 +6,7 @@ export default function AdminOrders() {
   const [orders, setOrders] = useState<any[]>([]);
 
   useEffect(() => {
-    fetch("https://digital-product-store-l9r1.onrender.com/api/orders")
+    fetch("https://digital-product-1-l3qr.onrender.com/api/orders")
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) {
