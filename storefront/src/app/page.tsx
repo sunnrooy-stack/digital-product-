@@ -27,7 +27,10 @@ export default function Home() {
       .then((res) => res.json())
       .then((data) => {
         if (Array.isArray(data)) {
-          let mapped = data.map((p: any) => ({
+          // Filter to only show Featured products in Trending
+          const featuredProducts = data.filter((p: any) => p.isFeatured === true);
+          
+          let mapped = featuredProducts.map((p: any) => ({
             id: String(p.id),
             title: p.title,
             price: Number(p.price),
@@ -36,7 +39,7 @@ export default function Home() {
           }));
           
           // Fallback so it doesn't look empty when the DB is brand new
-          if (mapped.length === 0) {
+          if (data.length === 0) {
             mapped = [
               { id: "1", title: "SaaS Starter Kit", price: 89, coverImage: "", sellerName: "DevPro" },
               { id: "2", title: "AI Prompt Pack", price: 29, coverImage: "", sellerName: "PromptMaster" },
