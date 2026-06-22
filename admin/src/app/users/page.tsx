@@ -22,7 +22,7 @@ export default function UsersAdmin() {
     // Set up polling for real-time updates
     const intervalId = setInterval(() => {
       fetchUsers();
-    }, 3000); // Poll every 3 seconds
+    }, 1500); // Poll every 1.5 seconds
 
     return () => clearInterval(intervalId); // Cleanup on unmount
   }, []);

@@ -52,7 +52,7 @@ function ProductsContent() {
 
   useEffect(() => {
     refreshProducts();
-    const intervalId = setInterval(refreshProducts, 3000);
+    const intervalId = setInterval(refreshProducts, 1500);
     return () => clearInterval(intervalId);
   }, []);
 
