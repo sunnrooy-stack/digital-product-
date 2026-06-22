@@ -7,11 +7,16 @@ import { auth } from "@/lib/firebase";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 
 export default function Navbar() {
+  const [mounted, setMounted] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const dropdownRef = useRef<HTMLDivElement>(null);
+  
+  useEffect(() => {
+    setMounted(true);
+  }, []);
   
   const itemCount = useCartStore((s) => s.itemCount());
 
@@ -90,7 +95,7 @@ export default function Navbar() {
             className="relative p-2 rounded-lg hover:bg-muted transition-colors shrink-0"
           >
             <span className="text-lg">🛒</span>
-            {itemCount > 0 && (
+            {mounted && itemCount > 0 && (
               <span className="absolute -top-1 -right-1 w-5 h-5 bg-primary text-white text-[10px] font-bold rounded-full flex items-center justify-center">
                 {itemCount}
               </span>

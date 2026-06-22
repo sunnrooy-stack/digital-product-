@@ -52,6 +52,8 @@ function ProductsContent() {
 
   useEffect(() => {
     refreshProducts();
+    const intervalId = setInterval(refreshProducts, 3000);
+    return () => clearInterval(intervalId);
   }, []);
 
   // Form State
@@ -144,14 +146,14 @@ function ProductsContent() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(duplicated),
-    }).catch(() => refreshProducts());
+    }).finally(() => refreshProducts());
   };
 
   const handleDelete = (id: string) => {
     setProducts(products.filter((p) => p.id !== id));
     fetch(`https://digital-product-1-l3qr.onrender.com/api/products/${id}`, {
       method: "DELETE",
-    }).catch(() => refreshProducts());
+    }).finally(() => refreshProducts());
   };
 
   const handleToggleFeatured = (id: string) => {
@@ -164,7 +166,7 @@ function ProductsContent() {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(updated),
-    }).catch(() => refreshProducts());
+    }).finally(() => refreshProducts());
   };
 
   const handleFormSubmit = (e: React.FormEvent) => {
@@ -196,7 +198,7 @@ function ProductsContent() {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(updatedProduct),
-      }).catch(() => refreshProducts());
+      }).finally(() => refreshProducts());
     } else {
       // Add mode
       const newProduct: Product = {
@@ -225,7 +227,7 @@ function ProductsContent() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(newProduct),
-      }).catch(() => refreshProducts());
+      }).finally(() => refreshProducts());
     }
 
     // Reset Form
