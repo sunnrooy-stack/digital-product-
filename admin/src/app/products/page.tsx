@@ -139,38 +139,32 @@ function ProductsContent() {
       views: 0,
       revenue: 0,
     };
+    setProducts([...products, duplicated]);
     fetch("https://digital-product-1-l3qr.onrender.com/api/products", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(duplicated),
-    })
-      .then(() => refreshProducts())
-      .catch(() => setProducts([...products, duplicated]));
+    }).catch(() => refreshProducts());
   };
 
   const handleDelete = (id: string) => {
+    setProducts(products.filter((p) => p.id !== id));
     fetch(`https://digital-product-1-l3qr.onrender.com/api/products/${id}`, {
       method: "DELETE",
-    })
-      .then(() => refreshProducts())
-      .catch(() => setProducts(products.filter((p) => p.id !== id)));
+    }).catch(() => refreshProducts());
   };
 
   const handleToggleFeatured = (id: string) => {
     const target = products.find((p) => p.id === id);
     if (!target) return;
     const updated = { ...target, isFeatured: !target.isFeatured };
+    setProducts(products.map((p) => (p.id === id ? updated : p)));
+    
     fetch(`https://digital-product-1-l3qr.onrender.com/api/products/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(updated),
-    })
-      .then(() => refreshProducts())
-      .catch(() =>
-        setProducts(
-          products.map((p) => (p.id === id ? { ...p, isFeatured: !p.isFeatured } : p))
-        )
-      );
+    }).catch(() => refreshProducts());
   };
 
   const handleFormSubmit = (e: React.FormEvent) => {
@@ -196,17 +190,13 @@ function ProductsContent() {
         metaDescription: formMetaDesc,
       };
 
+      setProducts(products.map((p) => (p.id === formId ? { ...p, ...updatedProduct } : p)));
+
       fetch(`https://digital-product-1-l3qr.onrender.com/api/products/${formId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(updatedProduct),
-      })
-        .then(() => refreshProducts())
-        .catch(() =>
-          setProducts(
-            products.map((p) => (p.id === formId ? { ...p, ...updatedProduct } : p))
-          )
-        );
+      }).catch(() => refreshProducts());
     } else {
       // Add mode
       const newProduct: Product = {
@@ -229,13 +219,13 @@ function ProductsContent() {
         revenue: 0,
       };
 
+      setProducts([...products, newProduct]);
+
       fetch("https://digital-product-1-l3qr.onrender.com/api/products", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(newProduct),
-      })
-        .then(() => refreshProducts())
-        .catch(() => setProducts([...products, newProduct]));
+      }).catch(() => refreshProducts());
     }
 
     // Reset Form
