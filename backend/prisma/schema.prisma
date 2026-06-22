@@ -62,9 +62,26 @@ model Product {
   sellerId      String
   seller        User      @relation(fields: [sellerId], references: [id])
 
+  categoryId    String?
+  categoryRef   Category? @relation(fields: [categoryId], references: [id])
+
   orders        OrderItem[]
   reviews       Review[]
   wishlistedBy  Wishlist[]
+}
+
+model Category {
+  id              String     @id @default(uuid())
+  name            String
+  slug            String     @unique
+  parentId        String?
+  parent          Category?  @relation("SubCategories", fields: [parentId], references: [id])
+  subCategories   Category[] @relation("SubCategories")
+  metaTitle       String?
+  metaDescription String?
+  products        Product[]
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
 }
 
 model Order {
