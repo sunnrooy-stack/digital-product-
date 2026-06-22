@@ -40,7 +40,7 @@ function ProductsContent() {
   const [products, setProducts] = useState<Product[]>([]);
 
   const refreshProducts = () => {
-    fetch("https://digital-product-1-l3qr.onrender.com/api/products")
+    fetch(`https://digital-product-1-l3qr.onrender.com/api/products?t=${new Date().getTime()}`, { cache: "no-store" })
       .then((res) => res.json())
       .then((data) => {
         if (Array.isArray(data)) {
@@ -74,7 +74,7 @@ function ProductsContent() {
   const [uploadingFiles, setUploadingFiles] = useState(false);
 
   useEffect(() => {
-    fetch("https://digital-product-1-l3qr.onrender.com/api/categories")
+    fetch(`https://digital-product-1-l3qr.onrender.com/api/categories?t=${new Date().getTime()}`, { cache: "no-store" })
       .then((res) => res.json())
       .then((data) => {
         if (Array.isArray(data)) {

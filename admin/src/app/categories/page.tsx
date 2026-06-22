@@ -21,7 +21,7 @@ export default function CategoriesPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch("https://digital-product-1-l3qr.onrender.com/api/categories")
+    fetch(`https://digital-product-1-l3qr.onrender.com/api/categories?t=${new Date().getTime()}`, { cache: "no-store" })
       .then((res) => res.json())
       .then((data) => {
         if (Array.isArray(data)) {
