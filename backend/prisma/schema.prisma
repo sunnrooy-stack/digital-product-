@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "mongodb"
   url      = env("DATABASE_URL")
 }
 
@@ -27,7 +27,7 @@ enum ProductStatus {
 }
 
 model User {
-  id            String    @id @default(uuid())
+  id String @id @default(auto()) @map("_id") @db.ObjectId
   firebaseUid   String    @unique
   email         String    @unique
   name          String
@@ -45,7 +45,7 @@ model User {
 }
 
 model Product {
-  id            String    @id @default(uuid())
+  id String @id @default(auto()) @map("_id") @db.ObjectId
   title         String
   description   String
   price         Float
@@ -59,11 +59,11 @@ model Product {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  sellerId      String
-  seller        User      @relation(fields: [sellerId], references: [id])
+  sellerId String @db.ObjectId
+  seller        User      @relation(fields: [sellerId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
-  categoryId    String?
-  categoryRef   Category? @relation(fields: [categoryId], references: [id])
+  categoryId String? @db.ObjectId
+  categoryRef   Category? @relation(fields: [categoryId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   orders        OrderItem[]
   reviews       Review[]
@@ -71,11 +71,11 @@ model Product {
 }
 
 model Category {
-  id              String     @id @default(uuid())
+  id String @id @default(auto()) @map("_id") @db.ObjectId
   name            String
   slug            String     @unique
-  parentId        String?
-  parent          Category?  @relation("SubCategories", fields: [parentId], references: [id])
+  parentId String? @db.ObjectId
+  parent          Category?  @relation("SubCategories", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   subCategories   Category[] @relation("SubCategories")
   metaTitle       String?
   metaDescription String?
@@ -85,7 +85,7 @@ model Category {
 }
 
 model Order {
-  id            String    @id @default(uuid())
+  id String @id @default(auto()) @map("_id") @db.ObjectId
   orderNumber   String    @unique
   totalAmount   Float
   status        OrderStatus @default(PENDING)
@@ -93,52 +93,52 @@ model Order {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  userId        String
-  user          User      @relation(fields: [userId], references: [id])
+  userId String @db.ObjectId
+  user          User      @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   items         OrderItem[]
   refundRequest RefundRequest?
 }
 
 model OrderItem {
-  id            String    @id @default(uuid())
+  id String @id @default(auto()) @map("_id") @db.ObjectId
   priceAtPurchase Float
 
-  orderId       String
-  order         Order     @relation(fields: [orderId], references: [id])
+  orderId String @db.ObjectId
+  order         Order     @relation(fields: [orderId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
-  productId     String
-  product       Product   @relation(fields: [productId], references: [id])
+  productId String @db.ObjectId
+  product       Product   @relation(fields: [productId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
 
 model Review {
-  id            String    @id @default(uuid())
+  id String @id @default(auto()) @map("_id") @db.ObjectId
   rating        Int
   comment       String?
   createdAt     DateTime  @default(now())
 
-  userId        String
-  user          User      @relation(fields: [userId], references: [id])
+  userId String @db.ObjectId
+  user          User      @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
-  productId     String
-  product       Product   @relation(fields: [productId], references: [id])
+  productId String @db.ObjectId
+  product       Product   @relation(fields: [productId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
 
 model Wishlist {
-  id            String    @id @default(uuid())
+  id String @id @default(auto()) @map("_id") @db.ObjectId
   createdAt     DateTime  @default(now())
 
-  userId        String
-  user          User      @relation(fields: [userId], references: [id])
+  userId String @db.ObjectId
+  user          User      @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
-  productId     String
-  product       Product   @relation(fields: [productId], references: [id])
+  productId String @db.ObjectId
+  product       Product   @relation(fields: [productId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@unique([userId, productId])
 }
 
 model Coupon {
-  id            String    @id @default(uuid())
+  id String @id @default(auto()) @map("_id") @db.ObjectId
   code          String    @unique
   discountPct   Float     // Percentage discount
   validUntil    DateTime
@@ -147,32 +147,32 @@ model Coupon {
 }
 
 model RefundRequest {
-  id            String    @id @default(uuid())
+  id String @id @default(auto()) @map("_id") @db.ObjectId
   reason        String
   status        ProductStatus @default(PENDING_APPROVAL) // Reusing status enum for simplicity: PENDING, APPROVED, REJECTED
   createdAt     DateTime  @default(now())
 
-  orderId       String    @unique
-  order         Order     @relation(fields: [orderId], references: [id])
+  orderId String @unique @db.ObjectId
+  order         Order     @relation(fields: [orderId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
 
 model SupportTicket {
-  id            String    @id @default(uuid())
+  id String @id @default(auto()) @map("_id") @db.ObjectId
   subject       String
   message       String
   status        String    @default("OPEN") // OPEN, IN_PROGRESS, RESOLVED
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  userId        String
-  user          User      @relation(fields: [userId], references: [id])
+  userId String @db.ObjectId
+  user          User      @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
 
 model Earning {
-  id            String    @id @default(uuid())
+  id String @id @default(auto()) @map("_id") @db.ObjectId
   amount        Float
   createdAt     DateTime  @default(now())
 
-  sellerId      String
-  seller        User      @relation(fields: [sellerId], references: [id])
+  sellerId String @db.ObjectId
+  seller        User      @relation(fields: [sellerId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
