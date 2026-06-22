@@ -22,6 +22,9 @@ export default function RootLayout({
             </span>
           </div>
           <nav className="flex-1 p-4 space-y-2">
+            <a href="https://digitals-product-store.onrender.com" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 px-3 py-2 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors font-bold mb-4">
+              <span className="text-lg">🛒</span> View Storefront
+            </a>
             <Link href="/" className="flex items-center gap-3 px-3 py-2 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors font-medium">
               <span className="text-lg">📈</span> Overview
             </Link>
