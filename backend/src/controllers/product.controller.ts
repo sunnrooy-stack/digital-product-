@@ -31,7 +31,7 @@ export const getProductById = async (req: Request, res: Response) => {
 
 export const createProduct = async (req: Request, res: Response) => {
   try {
-    const { title, description, price, category, tags, coverImage, previewMedia, fileUrls, status, isFeatured } = req.body;
+    const { title, description, price, category, tags, coverImage, previewMedia, fileUrls, status, isFeatured, metaTitle, metaDescription, publishDate } = req.body;
     
     // Create or find a dummy admin user if none exists
     let sellerId = "dummy_admin_id";
@@ -66,6 +66,9 @@ export const createProduct = async (req: Request, res: Response) => {
         status: productStatus,
         isPublished: isPublished,
         isFeatured: isFeatured !== undefined ? isFeatured : true,
+        metaTitle: metaTitle || "",
+        metaDescription: metaDescription || "",
+        publishDate: publishDate ? new Date(publishDate) : null,
         sellerId: sellerId,
       },
     });
@@ -80,14 +83,19 @@ export const createProduct = async (req: Request, res: Response) => {
 export const updateProduct = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { id: _, sellerId, categoryRef, seller, ...updateData } = req.body;
+    const { id: _, sellerId, categoryRef, seller, publishDate, ...updateData } = req.body;
 
     const product = await prisma.product.findUnique({ where: { id } });
     if (!product) return res.status(404).json({ error: 'Product not found' });
 
+    const dataToUpdate: any = { ...updateData };
+    if (publishDate) {
+      dataToUpdate.publishDate = new Date(publishDate);
+    }
+
     const updatedProduct = await prisma.product.update({
       where: { id },
-      data: updateData,
+      data: dataToUpdate,
     });
 
     res.status(200).json({ message: 'Product updated successfully', product: updatedProduct });

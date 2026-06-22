@@ -146,14 +146,18 @@ function ProductsContent() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(duplicated),
-    }).finally(() => refreshProducts());
+    })
+      .then(res => { if (!res.ok) alert("Failed to duplicate product!"); })
+      .finally(() => refreshProducts());
   };
 
   const handleDelete = (id: string) => {
     setProducts(products.filter((p) => p.id !== id));
     fetch(`https://digital-product-1-l3qr.onrender.com/api/products/${id}`, {
       method: "DELETE",
-    }).finally(() => refreshProducts());
+    })
+      .then(res => { if (!res.ok) alert("Failed to delete product! It might be a dummy product or there's a server error."); })
+      .finally(() => refreshProducts());
   };
 
   const handleToggleFeatured = (id: string) => {
@@ -166,7 +170,9 @@ function ProductsContent() {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(updated),
-    }).finally(() => refreshProducts());
+    })
+      .then(res => { if (!res.ok) alert("Failed to toggle feature status!"); })
+      .finally(() => refreshProducts());
   };
 
   const handleFormSubmit = (e: React.FormEvent) => {
@@ -198,7 +204,9 @@ function ProductsContent() {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(updatedProduct),
-      }).finally(() => refreshProducts());
+      })
+        .then(res => { if (!res.ok) alert("Failed to update product! Please try again."); })
+        .finally(() => refreshProducts());
     } else {
       // Add mode
       const newProduct: Product = {
@@ -227,7 +235,9 @@ function ProductsContent() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(newProduct),
-      }).finally(() => refreshProducts());
+      })
+        .then(res => { if (!res.ok) alert("Failed to create product! Please try again."); })
+        .finally(() => refreshProducts());
     }
 
     // Reset Form
