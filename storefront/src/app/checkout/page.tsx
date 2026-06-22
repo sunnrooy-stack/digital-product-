@@ -41,7 +41,7 @@ export default function CheckoutPage() {
       let orderId = undefined;
       try {
         // Create Order on the backend
-        const res = await fetch("/api/create-order", {
+        const res = await fetch("https://digital-product-1-l3qr.onrender.com/api/create-order", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ amount: totalAmount() }),
@@ -71,7 +71,7 @@ export default function CheckoutPage() {
         description: "Digital Products Purchase",
         handler: async function (response: any) {
           try {
-            const verifyRes = await fetch("/api/verify-payment", {
+            const verifyRes = await fetch("https://digital-product-1-l3qr.onrender.com/api/verify-payment", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
@@ -86,7 +86,7 @@ export default function CheckoutPage() {
             if (verifyData.success) {
               // Create the order in our database
               try {
-                await fetch("/api/orders", {
+                await fetch("https://digital-product-1-l3qr.onrender.com/api/orders", {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
                   body: JSON.stringify({

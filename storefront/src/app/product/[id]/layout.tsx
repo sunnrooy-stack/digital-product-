@@ -1,6 +1,3 @@
-import React from "react";
-import ClientPage from "./ClientPage";
-
 export async function generateStaticParams() {
   try {
     const res = await fetch("https://digital-product-1-l3qr.onrender.com/api/products");
@@ -16,6 +13,6 @@ export async function generateStaticParams() {
   return [];
 }
 
-export default function Page({ params }: { params: { id: string } }) {
-  return <ClientPage />;
+export default function Layout({ children }: { children: React.ReactNode }) {
+  return <>{children}</>;
 }

@@ -21,7 +21,7 @@ export default function LoginPage() {
       const token = await result.user.getIdToken();
       
       try {
-        await fetch("/api/users", {
+        await fetch("https://digital-product-1-l3qr.onrender.com/api/users", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({

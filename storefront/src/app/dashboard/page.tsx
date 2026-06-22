@@ -35,7 +35,7 @@ function DashboardContent() {
       if (currentUser && currentUser.email) {
         // Fetch user's orders
         try {
-          const res = await fetch("/api/orders");
+          const res = await fetch("https://digital-product-1-l3qr.onrender.com/api/orders");
           const allOrders = await res.json();
           if (Array.isArray(allOrders)) {
             const userOrders = allOrders.filter((order: any) => order.email === currentUser.email);
