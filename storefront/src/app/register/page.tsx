@@ -1,22 +1,24 @@
 "use client";
 
 import { useState } from "react";
-import { auth, googleProvider, signInWithPopup, signInWithEmailAndPassword } from "@/lib/firebase";
+import { auth, googleProvider, signInWithPopup, createUserWithEmailAndPassword } from "@/lib/firebase";
 import Link from "next/link";
+import { updateProfile } from "firebase/auth";
 
-export default function LoginPage() {
+export default function RegisterPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  const handleEmailLogin = async (e: React.FormEvent) => {
+  const handleEmailRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!auth) {
       setError("Firebase configuration is missing.");
       return;
     }
-    if (!email || !password) {
+    if (!name || !email || !password) {
       setError("Please fill out all fields.");
       return;
     }
@@ -25,18 +27,33 @@ export default function LoginPage() {
     setError("");
 
     try {
-      const result = await signInWithEmailAndPassword(auth, email, password);
-      // Optional: Save user to DB here if needed
+      const result = await createUserWithEmailAndPassword(auth, email, password);
+      await updateProfile(result.user, { displayName: name });
+      
+      try {
+        await fetch("https://digital-product-1-l3qr.onrender.com/api/users", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            uid: result.user.uid,
+            name: name,
+            email: result.user.email
+          })
+        });
+      } catch (e) {
+        console.error("Failed to register user to DB", e);
+      }
+      
       window.location.href = "/dashboard";
     } catch (err: any) {
       console.error(err);
-      setError(err.message || "Failed to login with email");
+      setError(err.message || "Failed to register with email");
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleGoogleLogin = async () => {
+  const handleGoogleRegister = async () => {
     if (!auth) {
       setError("Firebase configuration is missing. Check .env.local");
       return;
@@ -47,7 +64,6 @@ export default function LoginPage() {
     
     try {
       const result = await signInWithPopup(auth, googleProvider);
-      const token = await result.user.getIdToken();
       
       try {
         await fetch("https://digital-product-1-l3qr.onrender.com/api/users", {
@@ -69,7 +85,7 @@ export default function LoginPage() {
       if (err.code === 'auth/unauthorized-domain') {
         setError(`Domain not authorized. Add '${window.location.hostname}' to Firebase Authorized Domains.`);
       } else {
-        setError(err.message || "Failed to login with Google");
+        setError(err.message || "Failed to register with Google");
       }
     } finally {
       setIsLoading(false);
@@ -77,11 +93,11 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background px-6">
+    <div className="min-h-screen flex items-center justify-center bg-background px-6 py-12 mt-8">
       <div className="max-w-md w-full space-y-8 glass-panel p-10 rounded-3xl border border-border">
         <div className="text-center">
-          <h2 className="text-3xl font-extrabold text-foreground">Welcome back</h2>
-          <p className="mt-2 text-sm text-muted-foreground">Sign in to access your Digital Products account</p>
+          <h2 className="text-3xl font-extrabold text-foreground">Create an account</h2>
+          <p className="mt-2 text-sm text-muted-foreground">Join us to access premium digital products</p>
         </div>
         
         {error && (
@@ -90,7 +106,18 @@ export default function LoginPage() {
           </div>
         )}
 
-        <form onSubmit={handleEmailLogin} className="mt-8 space-y-4">
+        <form onSubmit={handleEmailRegister} className="mt-8 space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-1">Full Name</label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="w-full px-4 py-3 bg-muted/50 border border-border rounded-xl focus:ring-2 focus:ring-primary focus:outline-none transition-all"
+              placeholder="John Doe"
+              required
+            />
+          </div>
           <div>
             <label className="block text-sm font-medium text-foreground mb-1">Email</label>
             <input
@@ -111,6 +138,7 @@ export default function LoginPage() {
               className="w-full px-4 py-3 bg-muted/50 border border-border rounded-xl focus:ring-2 focus:ring-primary focus:outline-none transition-all"
               placeholder="••••••••"
               required
+              minLength={6}
             />
           </div>
           
@@ -119,7 +147,7 @@ export default function LoginPage() {
             disabled={isLoading}
             className="w-full flex items-center justify-center py-3 bg-primary text-white font-medium rounded-xl hover:bg-primary/90 transition-all disabled:opacity-50"
           >
-            {isLoading ? "Signing in..." : "Sign In"}
+            {isLoading ? "Creating account..." : "Sign Up"}
           </button>
         </form>
 
@@ -130,7 +158,7 @@ export default function LoginPage() {
         </div>
 
         <button
-          onClick={handleGoogleLogin}
+          onClick={handleGoogleRegister}
           disabled={isLoading}
           className="w-full flex items-center justify-center gap-3 px-4 py-3 border border-border rounded-xl shadow-sm bg-card text-foreground hover:bg-muted focus:outline-none transition-all disabled:opacity-50"
         >
@@ -156,9 +184,9 @@ export default function LoginPage() {
         </button>
 
         <p className="mt-6 text-center text-sm text-muted-foreground">
-          Don't have an account?{" "}
-          <Link href="/register" className="text-primary font-medium hover:underline">
-            Sign up
+          Already have an account?{" "}
+          <Link href="/login" className="text-primary font-medium hover:underline">
+            Sign in
           </Link>
         </p>
       </div>

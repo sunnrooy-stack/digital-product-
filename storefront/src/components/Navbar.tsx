@@ -156,12 +156,20 @@ export default function Navbar() {
               )}
             </div>
           ) : (
-            <Link
-              href="/login"
-              className="px-5 py-2 rounded-full bg-primary text-white text-sm font-semibold hover:bg-primary/90 transition-colors shrink-0"
-            >
-              Sign In
-            </Link>
+            <div className="flex items-center gap-2">
+              <Link
+                href="/login"
+                className="px-4 py-2 rounded-full text-sm font-medium hover:bg-muted transition-colors shrink-0"
+              >
+                Sign In
+              </Link>
+              <Link
+                href="/register"
+                className="px-5 py-2 rounded-full bg-primary text-white text-sm font-semibold hover:bg-primary/90 transition-colors shrink-0"
+              >
+                Sign Up
+              </Link>
+            </div>
           )}
 
           {/* Mobile hamburger */}
@@ -229,13 +237,22 @@ export default function Navbar() {
               </button>
             </div>
           ) : (
-            <Link
-              href="/login"
-              onClick={() => setMobileOpen(false)}
-              className="block w-full text-center py-2 text-sm font-semibold text-primary bg-primary/10 rounded-lg mt-2"
-            >
-              Sign In
-            </Link>
+            <div className="mt-2 space-y-2">
+              <Link
+                href="/login"
+                onClick={() => setMobileOpen(false)}
+                className="block w-full text-center py-2 text-sm font-medium border border-border rounded-lg hover:bg-muted transition-colors"
+              >
+                Sign In
+              </Link>
+              <Link
+                href="/register"
+                onClick={() => setMobileOpen(false)}
+                className="block w-full text-center py-2 text-sm font-semibold text-white bg-primary rounded-lg hover:bg-primary/90 transition-colors"
+              >
+                Sign Up
+              </Link>
+            </div>
           )}
         </div>
       )}
