@@ -79,7 +79,7 @@ export const createProduct = async (req: Request, res: Response) => {
 export const updateProduct = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const updateData = req.body;
+    const { id: _, sellerId, categoryRef, seller, ...updateData } = req.body;
 
     const product = await prisma.product.findUnique({ where: { id } });
     if (!product) return res.status(404).json({ error: 'Product not found' });
@@ -91,6 +91,7 @@ export const updateProduct = async (req: Request, res: Response) => {
 
     res.status(200).json({ message: 'Product updated successfully', product: updatedProduct });
   } catch (error) {
+    console.error(error);
     res.status(500).json({ error: 'Failed to update product' });
   }
 };
