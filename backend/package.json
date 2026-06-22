@@ -4,10 +4,10 @@
   "description": "Backend API for Premium Digital Product Store",
   "main": "dist/server.js",
   "scripts": {
-    "start": "npx prisma@5 db push --accept-data-loss && node dist/server.js",
+    "start": "npx prisma db push --accept-data-loss && node dist/server.js",
     "dev": "nodemon src/server.ts",
-    "build": "npm install && npx prisma@5 generate && tsc",
-    "postinstall": "npx prisma@5 generate && tsc"
+    "build": "npx prisma generate && tsc",
+    "postinstall": "npx prisma generate && tsc"
   },
   "dependencies": {
     "@prisma/client": "^5.0.0",
