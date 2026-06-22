@@ -48,7 +48,15 @@ function ProductsContent() {
       .then((res) => res.json())
       .then((data) => {
         if (Array.isArray(data)) {
-          setProducts(data);
+          let mapped = data;
+          if (mapped.length === 0) {
+            mapped = [
+              { id: "1", title: "SaaS Starter Kit", price: 89, description: "A premium SaaS boilerplate.", category: "Templates", tags: ["nextjs", "saas"], coverImage: "", sellerName: "DevPro", isFeatured: true },
+              { id: "2", title: "AI Prompt Pack", price: 29, description: "Highly engineered AI prompts.", category: "AI Prompts", tags: ["gpt"], coverImage: "", sellerName: "PromptMaster", isFeatured: true },
+              { id: "3", title: "React Dashboard", price: 49, description: "Beautiful custom React admin dashboard.", category: "Templates", tags: ["react"], coverImage: "", sellerName: "UIForge", isFeatured: true }
+            ];
+          }
+          setProducts(mapped);
         }
         setLoading(false);
       })

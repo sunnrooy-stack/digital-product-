@@ -27,13 +27,23 @@ export default function Home() {
       .then((res) => res.json())
       .then((data) => {
         if (Array.isArray(data)) {
-          const mapped = data.map((p: any) => ({
+          let mapped = data.map((p: any) => ({
             id: String(p.id),
             title: p.title,
             price: Number(p.price),
             coverImage: p.coverImage || "",
             sellerName: p.sellerName || "Admin",
           }));
+          
+          // Fallback so it doesn't look empty when the DB is brand new
+          if (mapped.length === 0) {
+            mapped = [
+              { id: "1", title: "SaaS Starter Kit", price: 89, coverImage: "", sellerName: "DevPro" },
+              { id: "2", title: "AI Prompt Pack", price: 29, coverImage: "", sellerName: "PromptMaster" },
+              { id: "3", title: "React Dashboard", price: 49, coverImage: "", sellerName: "UIForge" }
+            ];
+          }
+          
           setProducts(mapped);
         }
         setLoadingProducts(false);
