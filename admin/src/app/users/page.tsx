@@ -5,7 +5,7 @@ import React, { useState, useEffect } from "react";
 export default function UsersAdmin() {
   const [users, setUsers] = useState<any[]>([]);
 
-  useEffect(() => {
+  const fetchUsers = () => {
     fetch("https://digital-product-1-l3qr.onrender.com/api/users")
       .then(res => res.json())
       .then(data => {
@@ -14,6 +14,17 @@ export default function UsersAdmin() {
         }
       })
       .catch(err => console.error("Failed to load users:", err));
+  };
+
+  useEffect(() => {
+    fetchUsers(); // Initial fetch
+    
+    // Set up polling for real-time updates
+    const intervalId = setInterval(() => {
+      fetchUsers();
+    }, 3000); // Poll every 3 seconds
+
+    return () => clearInterval(intervalId); // Cleanup on unmount
   }, []);
 
   return (
