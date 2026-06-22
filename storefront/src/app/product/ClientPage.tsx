@@ -2,11 +2,11 @@
 
 import React, { useState, useEffect } from "react";
 import { useCartStore, CartItem } from "@/store/cart";
-import { useParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 
 export default function ProductDetailPage() {
-  const params = useParams();
-  const id = params?.id as string;
+  const searchParams = useSearchParams();
+  const id = searchParams.get("id") as string;
 
   const { addItem, removeItem, isInCart } = useCartStore();
   const inCart = isInCart(id);

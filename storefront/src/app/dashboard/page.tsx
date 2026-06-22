@@ -212,7 +212,7 @@ function DashboardContent() {
                     </div>
                   </div>
                   <div className="flex gap-2 pt-2 border-t border-border/50">
-                    <a href={`/product/${item.id}`} className="flex-1 text-center py-2 bg-primary/10 hover:bg-primary/20 text-primary text-xs font-bold rounded-lg transition-colors">
+                    <a href={`/product?id=${item.id}`} className="flex-1 text-center py-2 bg-primary/10 hover:bg-primary/20 text-primary text-xs font-bold rounded-lg transition-colors">
                       View Details
                     </a>
                     <button className="px-3 py-2 bg-muted hover:bg-muted/80 text-xs font-semibold rounded-lg transition-colors">

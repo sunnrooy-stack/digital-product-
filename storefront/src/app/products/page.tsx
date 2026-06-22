@@ -179,7 +179,7 @@ function ProductsContent() {
                     className="glass-panel rounded-2xl p-4 flex flex-col justify-between hover:scale-[1.02] transition-transform duration-200 border border-border relative group"
                   >
                     <div>
-                      <a href={`/product/${product.id}`}>
+                      <a href={`/product?id=${product.id}`}>
                         <div className={`aspect-video w-full rounded-xl bg-gradient-to-br ${gradients[gradientIndex]} mb-4 flex items-center justify-center relative overflow-hidden`}>
                           {product.coverImage ? (
                             <img src={product.coverImage} alt={product.title} className="w-full h-full object-cover" />
@@ -242,7 +242,7 @@ function ProductsContent() {
                   };
                   return (
                     <div key={prod.id} className="bg-card p-3.5 rounded-xl border border-border/50 space-y-3">
-                      <a href={`/product/${prod.id}`} className="block hover:underline">
+                      <a href={`/product?id=${prod.id}`} className="block hover:underline">
                         <h4 className="font-bold text-sm line-clamp-1">{prod.title}</h4>
                       </a>
                       <p className="text-[10px] text-muted-foreground line-clamp-1">Category: {prod.category}</p>
