@@ -97,7 +97,7 @@ function ProductsContent() {
       
       setAiRecommendations(recommended);
       setAiLoading(false);
-    }, 800);
+    }, 500);
 
     return () => clearTimeout(timer);
   }, [items, products]);
