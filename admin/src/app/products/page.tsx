@@ -16,8 +16,13 @@ interface Product {
   features?: string[];
   demoUrl?: string;
   aspectRatio?: string;
+  coverAspectRatio?: string;
+  preview1AspectRatio?: string;
+  preview2AspectRatio?: string;
+  preview3AspectRatio?: string;
+  aspectRatios?: string[];
   previewGallery?: any[];
-  status: "Draft" | "Approved" | "Scheduled";
+  status: "Draft" | "Approved" | "Scheduled" | string;
   publishDate?: string;
   isFeatured: boolean;
   metaTitle: string;
@@ -25,6 +30,7 @@ interface Product {
   downloads: number;
   views: number;
   revenue: number;
+  [key: string]: any;
 }
 
 function ProductsContent() {
@@ -216,7 +222,7 @@ function ProductsContent() {
   const [formPreview2, setFormPreview2] = useState("");
   const [formPreview3, setFormPreview3] = useState("");
   const [formFileUrls, setFormFileUrls] = useState("");
-  const [formStatus, setFormStatus] = useState<"Draft" | "Approved" | "Scheduled">("Approved");
+  const [formStatus, setFormStatus] = useState<"Draft" | "Approved" | "Scheduled" | string>("Approved");
   const [formPublishDate, setFormPublishDate] = useState("");
   const [formIsFeatured, setFormIsFeatured] = useState(false);
   const [formMetaTitle, setFormMetaTitle] = useState("");
