@@ -98,38 +98,28 @@ export default function CheckoutPage() {
 
     try {
       let orderData: any = null;
+      const checkoutPayload = { items: items, email: email, amount: totalAmount() };
       
-      // 1. Try production API endpoint first, with local fallback
+      // 1. Try local API endpoint first, then remote Render backend
       try {
-        let res = await fetch("https://digital-product-1-l3qr.onrender.com/api/create-order", {
+        let res = await fetch("http://localhost:5000/api/create-order", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ items: items, email: email }),
-        });
+          body: JSON.stringify(checkoutPayload),
+        }).catch(() => null);
         
-        if (!res.ok) {
-          // Fallback to local server
+        if (!res || !res.ok) {
           res = await fetch("https://digital-product-1-l3qr.onrender.com/api/create-order", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ items: items, email: email }),
+            body: JSON.stringify(checkoutPayload),
           });
         }
         orderData = await res.json();
       } catch (e: any) {
-        // Retry with local backend
-        try {
-          const localRes = await fetch("https://digital-product-1-l3qr.onrender.com/api/create-order", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ items: items, email: email }),
-          });
-          orderData = await localRes.json();
-        } catch (localErr) {
-          alert("Could not reach backend API for order creation. Is the server running?");
-          setLoading(false);
-          return;
-        }
+        alert("Could not reach backend API for order creation. Is the server running?");
+        setLoading(false);
+        return;
       }
 
       if (!orderData || (!orderData.orderId && !orderData.isFree)) {
@@ -143,32 +133,26 @@ export default function CheckoutPage() {
       // Handle Test Mode / Demo Orders when Razorpay keys are unconfigured
       if (orderData.isDemo || !process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID.includes("dummy")) {
         const testPaymentId = `TEST_PAY_${Date.now()}`;
+        const verifyPayload = {
+          razorpay_order_id: orderId,
+          razorpay_payment_id: testPaymentId,
+          razorpay_signature: "test_signature",
+          items: items,
+          email: email,
+          customer: email.split("@")[0] || "Guest",
+        };
         
-        let verifyRes = await fetch("https://digital-product-1-l3qr.onrender.com/api/verify-payment", {
+        let verifyRes = await fetch("http://localhost:5000/api/verify-payment", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            razorpay_order_id: orderId,
-            razorpay_payment_id: testPaymentId,
-            razorpay_signature: "test_signature",
-            items: items,
-            email: email,
-            customer: email.split("@")[0] || "Guest",
-          }),
+          body: JSON.stringify(verifyPayload),
         }).catch(() => null);
 
         if (!verifyRes || !verifyRes.ok) {
           verifyRes = await fetch("https://digital-product-1-l3qr.onrender.com/api/verify-payment", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              razorpay_order_id: orderId,
-              razorpay_payment_id: testPaymentId,
-              razorpay_signature: "test_signature",
-              items: items,
-              email: email,
-              customer: email.split("@")[0] || "Guest",
-            }),
+            body: JSON.stringify(verifyPayload),
           });
         }
 
@@ -197,31 +181,26 @@ export default function CheckoutPage() {
         handler: async function (response: any) {
           try {
             // Verify payment AND atomically create COMPLETED DB Order on backend
-            let verifyRes = await fetch("https://digital-product-1-l3qr.onrender.com/api/verify-payment", {
+            const liveVerifyPayload = {
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+              items: items,
+              email: email,
+              customer: email.split("@")[0] || "Guest",
+            };
+
+            let verifyRes = await fetch("http://localhost:5000/api/verify-payment", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                razorpay_order_id: response.razorpay_order_id,
-                razorpay_payment_id: response.razorpay_payment_id,
-                razorpay_signature: response.razorpay_signature,
-                items: items,
-                email: email,
-                customer: email.split("@")[0] || "Guest",
-              }),
+              body: JSON.stringify(liveVerifyPayload),
             }).catch(() => null);
 
             if (!verifyRes || !verifyRes.ok) {
               verifyRes = await fetch("https://digital-product-1-l3qr.onrender.com/api/verify-payment", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  razorpay_order_id: response.razorpay_order_id,
-                  razorpay_payment_id: response.razorpay_payment_id,
-                  razorpay_signature: response.razorpay_signature,
-                  items: items,
-                  email: email,
-                  customer: email.split("@")[0] || "Guest",
-                }),
+                body: JSON.stringify(liveVerifyPayload),
               });
             }
 

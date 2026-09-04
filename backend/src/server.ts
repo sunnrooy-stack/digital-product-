@@ -117,27 +117,13 @@ app.post('/api/create-order', async (req, res) => {
   try {
     const { items, amount } = req.body;
     
-    // Server-Side Amount Calculation from Database
+    // Calculate total amount from cart items or provided amount
     let totalAmount = 0;
-    if (Array.isArray(items) && items.length > 0) {
-      const validDbIds = items.map((i: any) => String(i.id)).filter(id => /^[0-9a-fA-F]{24}$/.test(id));
-      let dbProducts: any[] = [];
-      if (validDbIds.length > 0) {
-        try {
-          dbProducts = await prisma.product.findMany({
-            where: { id: { in: validDbIds } }
-          });
-        } catch (e) {
-          console.warn("Prisma BSON product lookup warning:", e);
-        }
-      }
+    if (typeof amount === 'number' && amount > 0) {
+      totalAmount = amount;
+    } else if (Array.isArray(items) && items.length > 0) {
       items.forEach((item: any) => {
-        const dbProd = dbProducts.find((p) => p.id === String(item.id));
-        if (dbProd) {
-          totalAmount += Number(dbProd.price) || 0;
-        } else if (item.price) {
-          totalAmount += Number(item.price) || 0;
-        }
+        totalAmount += Number(item.price) || 0;
       });
     } else {
       totalAmount = Number(amount) || 0;
@@ -216,15 +202,8 @@ app.post('/api/verify-payment', async (req, res) => {
     let totalAmount = 0;
     const productList = Array.isArray(items) ? items : [];
     if (productList.length > 0) {
-      const productIds = productList.map((i: any) => String(i.id));
-      const dbProducts = await prisma.product.findMany({
-        where: { id: { in: productIds } }
-      });
       productList.forEach((item: any) => {
-        const dbProd = dbProducts.find((p) => p.id === String(item.id));
-        if (dbProd) {
-          totalAmount += dbProd.price;
-        }
+        totalAmount += Number(item.price) || 0;
       });
     }
 
