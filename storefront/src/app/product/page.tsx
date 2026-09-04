@@ -132,10 +132,26 @@ function ProductDetailContent() {
       if (isMounted) {
         if (Array.isArray(data)) {
           const map = new Map<string, any>();
-          data.forEach(p => map.set(String(p.id), p));
-          localProducts.forEach(p => map.set(String(p.id), { ...map.get(String(p.id)), ...p }));
+          const titleMap = new Map<string, string>();
+
+          data.forEach(p => {
+            map.set(String(p.id), p);
+            if (p.title) titleMap.set(p.title.trim().toLowerCase(), String(p.id));
+          });
+
+          localProducts.forEach(p => {
+            const titleKey = p.title ? p.title.trim().toLowerCase() : "";
+            if (map.has(String(p.id))) {
+              map.set(String(p.id), { ...map.get(String(p.id)), ...p });
+            } else if (titleKey && titleMap.has(titleKey)) {
+              const dbId = titleMap.get(titleKey)!;
+              map.set(dbId, { ...map.get(dbId), ...p, id: dbId });
+            } else {
+              map.set(String(p.id), p);
+            }
+          });
           
-          const match = map.get(String(id));
+          const match = map.get(String(id)) || (id ? Array.from(map.values()).find(p => String(p.id) === String(id) || (p.title && String(id).toLowerCase().includes(p.title.toLowerCase()))) : null);
           if (match) {
             setProduct(match);
             setActiveImage(match.coverImage || "");

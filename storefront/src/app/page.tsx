@@ -86,8 +86,25 @@ export default function Home() {
       if (isMounted) {
         const baseList = (Array.isArray(data) && data.length > 0) ? data : DEFAULT_PRODUCTS;
         const map = new Map<string, any>();
-        baseList.forEach((p) => map.set(String(p.id), p));
-        localProducts.forEach((p) => map.set(String(p.id), { ...map.get(String(p.id)), ...p }));
+        const titleMap = new Map<string, string>();
+
+        baseList.forEach((p) => {
+          map.set(String(p.id), p);
+          if (p.title) titleMap.set(p.title.trim().toLowerCase(), String(p.id));
+        });
+
+        localProducts.forEach((p) => {
+          const titleKey = p.title ? p.title.trim().toLowerCase() : "";
+          if (map.has(String(p.id))) {
+            map.set(String(p.id), { ...map.get(String(p.id)), ...p });
+          } else if (titleKey && titleMap.has(titleKey)) {
+            const dbId = titleMap.get(titleKey)!;
+            map.set(dbId, { ...map.get(dbId), ...p, id: dbId });
+          } else {
+            map.set(String(p.id), p);
+          }
+        });
+
         const mergedList = Array.from(map.values());
         const featuredProducts = mergedList.filter((p: any) => p.isFeatured === true);
         const mapped = (featuredProducts.length > 0 ? featuredProducts : mergedList).map((p: any) => ({

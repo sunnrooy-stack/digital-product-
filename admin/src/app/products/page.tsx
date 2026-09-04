@@ -61,8 +61,27 @@ function ProductsContent() {
   const mergeLocalWithFetched = (fetchedData: Product[]): Product[] => {
     const local = getLocalProducts();
     const map = new Map<string, Product>();
-    fetchedData.forEach((p) => map.set(String(p.id), p));
-    local.forEach((p) => map.set(String(p.id), { ...map.get(String(p.id)), ...p }));
+    const titleMap = new Map<string, string>();
+
+    fetchedData.forEach((p) => {
+      map.set(String(p.id), p);
+      if (p.title) {
+        titleMap.set(p.title.trim().toLowerCase(), String(p.id));
+      }
+    });
+
+    local.forEach((p) => {
+      const titleKey = p.title ? p.title.trim().toLowerCase() : "";
+      if (map.has(String(p.id))) {
+        map.set(String(p.id), { ...map.get(String(p.id)), ...p });
+      } else if (titleKey && titleMap.has(titleKey)) {
+        const dbId = titleMap.get(titleKey)!;
+        map.set(dbId, { ...map.get(dbId), ...p, id: dbId });
+      } else {
+        map.set(String(p.id), p);
+      }
+    });
+
     return Array.from(map.values());
   };
 
@@ -398,12 +417,16 @@ function ProductsContent() {
   };
 
   const handleDelete = (id: string) => {
-    setProducts(products.filter((p) => p.id !== id));
-    fetch(`https://digital-product-1-l3qr.onrender.com/api/products/${id}`, {
-      method: "DELETE",
-    })
-      .then(res => { if (!res.ok) alert("Failed to delete product! It might be a dummy product or there's a server error."); })
-      .finally(() => refreshProducts());
+    setProducts((prev) => prev.filter((p) => String(p.id) !== String(id)));
+    try {
+      const stored = getLocalProducts();
+      localStorage.setItem("admin_local_products", JSON.stringify(stored.filter((p) => String(p.id) !== String(id))));
+    } catch (e) {}
+
+    Promise.allSettled([
+      fetch(`http://localhost:5000/api/products/${id}`, { method: "DELETE" }).catch(() => null),
+      fetch(`https://digital-product-1-l3qr.onrender.com/api/products/${id}`, { method: "DELETE" }).catch(() => null),
+    ]).finally(() => refreshProducts());
   };
 
   const handleToggleFeatured = (id: string) => {
@@ -539,27 +562,50 @@ function ProductsContent() {
         revenue: 0,
       };
 
-      setProducts([...products, newProduct]);
+      (async () => {
+        let createdProduct: any = newProduct;
+        try {
+          let res = await fetch("http://localhost:5000/api/products", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(newProduct),
+          }).catch(() => null);
 
-      // Persist to local storage for instant storefront sync
-      try {
-        const stored = getLocalProducts();
-        localStorage.setItem("admin_local_products", JSON.stringify([newProduct, ...stored]));
-      } catch (e) {}
+          if (res && res.ok) {
+            const data = await res.json().catch(() => null);
+            if (data && data.product) createdProduct = data.product;
+          } else {
+            res = await fetch("https://digital-product-1-l3qr.onrender.com/api/products", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(newProduct),
+            }).catch(() => null);
+            if (res && res.ok) {
+              const data = await res.json().catch(() => null);
+              if (data && data.product) createdProduct = data.product;
+            }
+          }
+        } catch (err) {
+          console.error("Product create sync notice:", err);
+        }
 
-      // Dual POST to local backend & remote Render server
-      Promise.allSettled([
-        fetch("http://localhost:5000/api/products", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(newProduct),
-        }).catch(() => null),
-        fetch("https://digital-product-1-l3qr.onrender.com/api/products", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(newProduct),
-        }).catch(() => null),
-      ]).finally(() => refreshProducts());
+        // Persist to local storage cleanly without duplicates
+        try {
+          const stored = getLocalProducts();
+          const updated = [
+            createdProduct,
+            ...stored.filter(
+              (p) =>
+                String(p.id) !== String(createdProduct.id) &&
+                String(p.id) !== String(newProduct.id) &&
+                (!p.title || !createdProduct.title || p.title.trim().toLowerCase() !== createdProduct.title.trim().toLowerCase())
+            ),
+          ];
+          localStorage.setItem("admin_local_products", JSON.stringify(updated));
+        } catch (e) {}
+
+        refreshProducts();
+      })();
     }
 
     // Reset Form

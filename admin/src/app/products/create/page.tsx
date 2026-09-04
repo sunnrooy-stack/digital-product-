@@ -291,34 +291,56 @@ export default function CreateProductPage() {
       revenue: 0,
     };
 
-    // 1. Save to localStorage instantly for immediate storefront & admin access
+    let createdProduct: any = newProduct;
+
+    // 1. Post to backend API (Local backend first, then fallback to Render backend)
+    try {
+      let res = await fetch("http://localhost:5000/api/products", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newProduct),
+      }).catch(() => null);
+
+      if (res && res.ok) {
+        const data = await res.json().catch(() => null);
+        if (data && data.product) {
+          createdProduct = data.product;
+        }
+      } else {
+        res = await fetch("https://digital-product-1-l3qr.onrender.com/api/products", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(newProduct),
+        }).catch(() => null);
+        if (res && res.ok) {
+          const data = await res.json().catch(() => null);
+          if (data && data.product) {
+            createdProduct = data.product;
+          }
+        }
+      }
+    } catch (err) {
+      console.error("Product create sync notice:", err);
+    }
+
+    // 2. Save canonical product into localStorage without duplicates
     try {
       const stored = localStorage.getItem("admin_local_products");
       const existing: any[] = stored ? JSON.parse(stored) : [];
-      const updated = [newProduct, ...existing.filter((p) => String(p.id) !== String(newProduct.id))];
+      const updated = [
+        createdProduct,
+        ...existing.filter(
+          (p) =>
+            String(p.id) !== String(createdProduct.id) &&
+            String(p.id) !== String(newProduct.id) &&
+            (!p.title || !createdProduct.title || p.title.trim().toLowerCase() !== createdProduct.title.trim().toLowerCase())
+        ),
+      ];
       localStorage.setItem("admin_local_products", JSON.stringify(updated));
     } catch (e) {}
 
-    // 2. Dual POST to local backend and remote Render API
-    try {
-      await Promise.allSettled([
-        fetch("http://localhost:5000/api/products", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(newProduct),
-        }).catch(() => null),
-        fetch("https://digital-product-1-l3qr.onrender.com/api/products", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(newProduct),
-        }).catch(() => null),
-      ]);
-    } catch (err) {
-      console.error("Product create sync notice:", err);
-    } finally {
-      setLoading(false);
-      router.push("/products?tab=list");
-    }
+    setLoading(false);
+    router.push("/products?tab=list");
   };
 
   return (

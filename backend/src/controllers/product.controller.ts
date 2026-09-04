@@ -40,6 +40,7 @@ export const getProducts = async (req: Request, res: Response) => {
     }
 
     const mergedMap = new Map<string, any>();
+    const knownTitles = new Set<string>();
 
     // 1. Add DB products first
     dbProducts.forEach((p) => {
@@ -47,17 +48,26 @@ export const getProducts = async (req: Request, res: Response) => {
         ...p,
         sellerName: p.sellerName || 'Admin',
       });
+      if (p.title) {
+        knownTitles.add(p.title.trim().toLowerCase());
+      }
     });
 
-    // 2. Add/Override memory store updates (latest updates take precedence)
+    // 2. Add/Override memory store updates (latest updates take precedence, avoiding ghost duplicates)
     inMemoryProductsStore.forEach((p) => {
       if (p.id) {
-        const existing = mergedMap.get(String(p.id)) || {};
-        mergedMap.set(String(p.id), {
-          ...existing,
-          ...p,
-          isFeatured: p.isFeatured !== undefined ? p.isFeatured : existing.isFeatured,
-        });
+        if (mergedMap.has(String(p.id))) {
+          const existing = mergedMap.get(String(p.id)) || {};
+          mergedMap.set(String(p.id), {
+            ...existing,
+            ...p,
+            isFeatured: p.isFeatured !== undefined ? p.isFeatured : existing.isFeatured,
+          });
+        } else if (p.title && !knownTitles.has(p.title.trim().toLowerCase())) {
+          // Only add memory-only product if it doesn't already exist in DB under the same title
+          mergedMap.set(String(p.id), p);
+          knownTitles.add(p.title.trim().toLowerCase());
+        }
       }
     });
 
@@ -109,35 +119,7 @@ export const createProduct = async (req: Request, res: Response) => {
     const productStatus = status === "Draft" ? "PENDING_APPROVAL" : "APPROVED";
     const isPublished = productStatus === "APPROVED";
 
-    const newProdData = {
-      id: req.body.id || ("prod_" + Date.now()),
-      title,
-      description,
-      price: parseFloat(price) || 0,
-      category,
-      tags: tags || [],
-      coverImage: coverImage || "",
-      previewMedia: previewMedia || [],
-      fileUrls: fileUrls || [],
-      features: features || [],
-      demoUrl: demoUrl || "",
-      aspectRatio: req.body.aspectRatio || "16:9",
-      previewGallery: previewGallery || [],
-      status: productStatus,
-      isPublished: isPublished,
-      isFeatured: isFeatured !== undefined ? isFeatured : true,
-      metaTitle: metaTitle || "",
-      metaDescription: metaDescription || "",
-      publishDate: publishDate ? new Date(publishDate) : new Date(),
-      sellerId: sellerId,
-      sellerName: "Admin",
-      createdAt: new Date(),
-    };
-
-    // Save to memory store first
-    inMemoryProductsStore.unshift(newProdData);
-
-    let dbProduct = null;
+    let dbProduct: any = null;
     try {
       const dbData: any = {
         title,
@@ -166,7 +148,45 @@ export const createProduct = async (req: Request, res: Response) => {
       console.warn("Prisma create product notice (using memory fallback):", (dbErr as any).message);
     }
 
-    res.status(201).json({ message: 'Product created successfully', product: dbProduct || newProdData });
+    const finalProduct = dbProduct ? {
+      ...dbProduct,
+      sellerName: "Admin",
+    } : {
+      id: req.body.id || ("prod_" + Date.now()),
+      title,
+      description,
+      price: parseFloat(price) || 0,
+      category,
+      tags: tags || [],
+      coverImage: coverImage || "",
+      previewMedia: previewMedia || [],
+      fileUrls: fileUrls || [],
+      features: features || [],
+      demoUrl: demoUrl || "",
+      aspectRatio: req.body.aspectRatio || "16:9",
+      previewGallery: previewGallery || [],
+      status: productStatus,
+      isPublished: isPublished,
+      isFeatured: isFeatured !== undefined ? isFeatured : true,
+      metaTitle: metaTitle || "",
+      metaDescription: metaDescription || "",
+      publishDate: publishDate ? new Date(publishDate) : new Date(),
+      sellerId: sellerId,
+      sellerName: "Admin",
+      createdAt: new Date(),
+    };
+
+    // Clean up temporary duplicates in memory store
+    if (req.body.id) {
+      const existingIdx = inMemoryProductsStore.findIndex(p => String(p.id) === String(req.body.id));
+      if (existingIdx !== -1) inMemoryProductsStore.splice(existingIdx, 1);
+    }
+    const titleIdx = inMemoryProductsStore.findIndex(p => p.title && finalProduct.title && p.title.trim().toLowerCase() === finalProduct.title.trim().toLowerCase());
+    if (titleIdx !== -1) inMemoryProductsStore.splice(titleIdx, 1);
+
+    inMemoryProductsStore.unshift(finalProduct);
+
+    res.status(201).json({ message: 'Product created successfully', product: finalProduct });
   } catch (error: any) {
     console.error('Create product error:', error);
     res.status(500).json({ error: 'Failed to create product' });
