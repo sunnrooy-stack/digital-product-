@@ -9,17 +9,28 @@ export default function CategoriesPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    Promise.all([
-      fetch("https://digital-product-1-l3qr.onrender.com/api/categories").then(res => res.json()),
-      fetch("https://digital-product-1-l3qr.onrender.com/api/products").then(res => res.json())
-    ]).then(([catsData, prodsData]) => {
-      if (Array.isArray(catsData)) setCategories(catsData);
-      if (Array.isArray(prodsData)) setProducts(prodsData);
-      setLoading(false);
-    }).catch(err => {
-      console.error("Error loading categories page data:", err);
-      setLoading(false);
-    });
+    async function loadData() {
+      try {
+        let catsData = await fetch("http://localhost:5000/api/categories").then(r => r.json()).catch(() => null);
+        if (!Array.isArray(catsData)) {
+          catsData = await fetch("https://digital-product-1-l3qr.onrender.com/api/categories").then(r => r.json()).catch(() => []);
+        }
+
+        let prodsData = await fetch("http://localhost:5000/api/products").then(r => r.json()).catch(() => null);
+        if (!Array.isArray(prodsData)) {
+          prodsData = await fetch("https://digital-product-1-l3qr.onrender.com/api/products").then(r => r.json()).catch(() => []);
+        }
+
+        if (Array.isArray(catsData)) setCategories(catsData);
+        if (Array.isArray(prodsData)) setProducts(prodsData);
+      } catch (err) {
+        console.error("Error loading categories page data:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadData();
   }, []);
 
   const categoryIcons = ["🧠", "📚", "🎓", "🎨", "✨", "💻", "🎛️", "🖼️", "🧰", "📸", "🎵", "🎮", "🚀", "💡", "📦", "🎯"];
@@ -58,21 +69,22 @@ export default function CategoriesPage() {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {categories.map((category, index) => {
-            const count = products.filter(p => p.category.toLowerCase() === category.name.toLowerCase()).length;
+            const catName = category.name || "";
+            const count = products.filter(p => p.category && p.category.toLowerCase() === catName.toLowerCase()).length;
             const icon = categoryIcons[index % categoryIcons.length];
             const color = categoryColors[index % categoryColors.length];
             
             return (
               <Link
-                key={category.id}
-                href={`/products?category=${encodeURIComponent(category.name)}`}
+                key={category.id || index}
+                href={`/products?category=${encodeURIComponent(catName)}`}
                 className="glass-panel p-6 rounded-2xl flex items-center gap-6 cursor-pointer hover:scale-[1.02] transition-all"
               >
                 <div className={`w-16 h-16 rounded-xl flex items-center justify-center text-3xl ${color}`}>
                   {icon}
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold">{category.name}</h2>
+                  <h2 className="text-xl font-bold">{catName}</h2>
                   <p className="text-muted-foreground">{count} products</p>
                 </div>
               </Link>

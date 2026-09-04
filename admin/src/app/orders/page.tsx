@@ -6,16 +6,24 @@ export default function AdminOrders() {
   const [orders, setOrders] = useState<any[]>([]);
 
   useEffect(() => {
-    fetch("https://digital-product-1-l3qr.onrender.com/api/orders")
+    fetch("http://localhost:5000/api/orders")
       .then((res) => res.json())
       .then((data) => {
-        if (Array.isArray(data)) {
+        if (Array.isArray(data) && data.length > 0) {
           setOrders(data);
         } else {
-          console.error("Orders API returned non-array:", data);
+          fetch("https://digital-product-1-l3qr.onrender.com/api/orders")
+            .then((r) => r.json())
+            .then((remoteData) => { if (Array.isArray(remoteData)) setOrders(remoteData); })
+            .catch(() => {});
         }
       })
-      .catch((err) => console.error("Failed to load orders:", err));
+      .catch(() => {
+        fetch("https://digital-product-1-l3qr.onrender.com/api/orders")
+          .then((r) => r.json())
+          .then((remoteData) => { if (Array.isArray(remoteData)) setOrders(remoteData); })
+          .catch(() => {});
+      });
   }, []);
 
   return (

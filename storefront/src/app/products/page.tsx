@@ -193,14 +193,17 @@ function ProductsContent() {
   ];
 
   const filteredProducts = products.filter((p) => {
-    const pTagsLower = (p.tags || []).map((t) => t.toLowerCase());
+    const pTitle = p.title || "";
+    const pDesc = p.description || "";
+    const pCat = p.category || "";
+    const pTagsLower = (p.tags || []).map((t) => (t ? String(t).toLowerCase() : ""));
     const matchesSearch = searchQuery === "" || 
-                          p.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                          p.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          p.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          pTitle.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                          pDesc.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          pCat.toLowerCase().includes(searchQuery.toLowerCase()) ||
                           pTagsLower.some((t) => t.includes(searchQuery.toLowerCase()));
                           
-    const matchesCategory = selectedCategory === "all" || p.category.toLowerCase() === selectedCategory.toLowerCase();
+    const matchesCategory = selectedCategory === "all" || pCat.toLowerCase() === selectedCategory.toLowerCase();
     
     let matchesBadge = true;
     if (selectedTagBadge !== "all") {

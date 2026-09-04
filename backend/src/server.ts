@@ -377,6 +377,71 @@ app.get('/api/orders/verify-download', async (req, res) => {
 });
 
 // Routes
+app.post('/api/chat', async (req: Request, res: Response) => {
+  try {
+    const { messages } = req.body;
+    const lastUserMsg = Array.isArray(messages) && messages.length > 0 
+      ? messages[messages.length - 1]?.text || ""
+      : "";
+
+    if (!lastUserMsg) {
+      return res.json({ text: "Hello! How can I help you find digital products or answer questions today?" });
+    }
+
+    const geminiKey = process.env.GEMINI_API_KEY;
+    if (geminiKey && geminiKey !== "YOUR_GEMINI_API_KEY" && !geminiKey.includes("dummy")) {
+      try {
+        const geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [
+              {
+                role: "user",
+                parts: [{ text: `You are the helpful AI assistant for the Digital Products Store. Answer concisely and politely about digital assets, video templates, software presets, courses, downloads, licenses, and payments. User message: ${lastUserMsg}` }]
+              }
+            ]
+          })
+        });
+        if (geminiRes.ok) {
+          const geminiData = await geminiRes.json();
+          const aiText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (aiText) {
+            return res.json({ text: aiText });
+          }
+        }
+      } catch (geminiErr) {
+        console.warn("Gemini API call notice (falling back to smart assistant):", geminiErr);
+      }
+    }
+
+    // Smart Catalog & Store Assistant Fallback
+    const q = lastUserMsg.toLowerCase();
+    let reply = "";
+
+    if (q.includes("download") || q.includes("where is my file") || q.includes("access")) {
+      reply = "Instant Download Access: Once your payment completes, your digital files are available immediately on the Order Success page and under your 'My Dashboard -> Purchases' tab!";
+    } else if (q.includes("refund") || q.includes("return") || q.includes("money back")) {
+      reply = "Our Refund Policy: If a digital asset is defective or corrupted and cannot be resolved by support within 24 hours, we offer a full refund. You can submit a ticket in the Contact page!";
+    } else if (q.includes("commercial") || q.includes("license") || q.includes("client")) {
+      reply = "Commercial License Included: All digital assets purchased on our platform come with lifetime commercial use rights for personal and client projects.";
+    } else if (q.includes("payment") || q.includes("upi") || q.includes("card") || q.includes("razorpay")) {
+      reply = "Payment Methods: We support all Indian and Global payment methods including UPI (Google Pay, PhonePe, Paytm), Credit/Debit Cards, NetBanking, and Wallets via secure Razorpay checkout.";
+    } else if (q.includes("support") || q.includes("contact") || q.includes("help") || q.includes("ticket")) {
+      reply = "Need personal help? Visit our 'Contact' page to raise a priority support ticket, and our team will get back to you with live updates!";
+    } else if (q.includes("discount") || q.includes("offer") || q.includes("coupon") || q.includes("price")) {
+      reply = "Special Offers: Check out our FEATURED and TRENDING items on the homepage for discounted bundles and creator asset packs!";
+    } else {
+      reply = `Thank you for asking! We offer premium digital templates, video motion assets, presets, coding boilerplates, and creative packages. Feel free to explore our catalog or ask about any specific item!`;
+    }
+
+    res.json({ text: reply });
+  } catch (err: any) {
+    console.error("Chat error:", err);
+    res.status(500).json({ text: "I am having trouble connecting to AI services right now. Please check back shortly!" });
+  }
+});
+
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/payments', paymentRoutes);

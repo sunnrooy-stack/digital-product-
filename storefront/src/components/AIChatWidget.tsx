@@ -19,16 +19,25 @@ export default function AIChatWidget() {
     setIsLoading(true);
     
     try {
-      const response = await fetch('https://digital-product-1-l3qr.onrender.com/api/chat', {
+      let response = await fetch('http://localhost:5000/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ messages: [...messages, { role: 'user', text: userMessage }] })
-      });
+      }).catch(() => null);
+
+      if (!response || !response.ok) {
+        response = await fetch('https://digital-product-1-l3qr.onrender.com/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ messages: [...messages, { role: 'user', text: userMessage }] })
+        });
+      }
+
       const data = await response.json();
       if (data.text) {
         setMessages(prev => [...prev, { role: 'ai', text: data.text }]);
       } else {
-        setMessages(prev => [...prev, { role: 'ai', text: 'Sorry, I encountered an error. Have you configured your GEMINI_API_KEY?' }]);
+        setMessages(prev => [...prev, { role: 'ai', text: 'Sorry, I encountered an error. How else can I assist you?' }]);
       }
     } catch (error) {
       setMessages(prev => [...prev, { role: 'ai', text: 'Sorry, I am offline right now.' }]);

@@ -56,19 +56,35 @@ function DashboardContent() {
       
       if (userEmail) {
         try {
-          const res = await fetch("https://digital-product-1-l3qr.onrender.com/api/orders");
-          const allOrders = await res.json();
-          if (Array.isArray(allOrders)) {
-            const userOrders = allOrders.filter((order: any) => order.email === userEmail);
-            const formattedPurchases = userOrders.map((order: any) => ({
-              id: order.id,
-              title: order.product,
-              date: order.date,
-              icon: "📦", 
-              version: "v1.0.0", 
-              size: "Available in Dashboard"
-            }));
-            setPurchases(formattedPurchases);
+          let res = await fetch("http://localhost:5000/api/orders").catch(() => null);
+          if (!res || !res.ok) {
+            res = await fetch("https://digital-product-1-l3qr.onrender.com/api/orders").catch(() => null);
+          }
+          if (res && res.ok) {
+            const allOrders = await res.json();
+            if (Array.isArray(allOrders)) {
+              const userOrders = allOrders.filter((order: any) => 
+                order.email && order.email.toLowerCase() === userEmail.toLowerCase()
+              );
+              const formattedPurchases = userOrders.map((order: any) => {
+                const firstItem = Array.isArray(order.items) && order.items.length > 0 ? order.items[0] : null;
+                const fileUrls = Array.isArray(order.items)
+                  ? order.items.flatMap((i: any) => i.product?.fileUrls || i.fileUrls || [])
+                  : [];
+                return {
+                  id: order.id || order.orderNumber || order.paymentId,
+                  title: order.product || (firstItem ? firstItem.product?.title || "Digital Asset" : "Digital Product"),
+                  date: order.createdAt ? new Date(order.createdAt).toLocaleDateString() : (order.date || "Recent"),
+                  icon: "📦", 
+                  version: "v1.0.0", 
+                  size: "Full Package",
+                  fileUrls: fileUrls,
+                  paymentId: order.paymentId || order.orderNumber || order.id,
+                  totalAmount: order.totalAmount,
+                };
+              });
+              setPurchases(formattedPurchases);
+            }
           }
         } catch (err) {
           console.error("Failed to fetch user orders", err);
@@ -79,6 +95,23 @@ function DashboardContent() {
 
     return () => unsubscribe();
   }, []);
+
+  const handleDownload = (prod: any) => {
+    if (prod.fileUrls && prod.fileUrls.length > 0) {
+      prod.fileUrls.forEach((url: string) => {
+        window.open(url, "_blank", "noopener,noreferrer");
+      });
+    } else if (prod.paymentId) {
+      window.location.href = `/success?payment_id=${prod.paymentId}`;
+    } else {
+      alert("Preparing package files... Please check your email for the direct download link.");
+    }
+  };
+
+  const handleInvoice = (prod: any) => {
+    const invoiceDetails = `INVOICE RECEIPT\nOrder/Payment ID: ${prod.paymentId || prod.id}\nItem: ${prod.title}\nDate: ${prod.date}\nStatus: PAID & COMPLETED\nAmount: ₹${Number(prod.totalAmount || 0).toFixed(2)}`;
+    alert(invoiceDetails);
+  };
 
   if (isLoading) {
     return <div className="py-20 text-center text-muted-foreground">Loading dashboard...</div>;
@@ -169,7 +202,10 @@ function DashboardContent() {
                         <p className="text-xs text-muted-foreground">Purchased on {prod.date}</p>
                       </div>
                     </div>
-                    <button className="px-5 py-2 bg-primary text-white text-sm font-bold rounded-full hover:bg-primary/90 transition-colors shadow">
+                    <button 
+                      onClick={() => handleDownload(prod)}
+                      className="px-5 py-2 bg-primary text-white text-sm font-bold rounded-full hover:bg-primary/90 transition-colors shadow"
+                    >
                       Download
                     </button>
                   </div>
@@ -206,10 +242,16 @@ function DashboardContent() {
                     </div>
                   </div>
                   <div className="flex gap-2">
-                    <button className="flex-1 sm:flex-none px-6 py-2.5 bg-primary text-white text-sm font-bold rounded-xl hover:bg-primary/90 transition-all shadow">
-                      Download Files (.zip)
+                    <button 
+                      onClick={() => handleDownload(prod)}
+                      className="flex-1 sm:flex-none px-6 py-2.5 bg-primary text-white text-sm font-bold rounded-xl hover:bg-primary/90 transition-all shadow"
+                    >
+                      Download Files
                     </button>
-                    <button className="px-4 py-2.5 bg-muted hover:bg-muted/80 text-xs font-semibold rounded-xl transition-colors">
+                    <button 
+                      onClick={() => handleInvoice(prod)}
+                      className="px-4 py-2.5 bg-muted hover:bg-muted/80 text-xs font-semibold rounded-xl transition-colors"
+                    >
                       📄 Invoice
                     </button>
                   </div>

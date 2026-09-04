@@ -20,17 +20,29 @@ export default function CategoriesPage() {
   const [metaDescription, setMetaDescription] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetch(`https://digital-product-1-l3qr.onrender.com/api/categories?t=${new Date().getTime()}`, { cache: "no-store" })
+  const loadCategories = () => {
+    fetch(`http://localhost:5000/api/categories?t=${new Date().getTime()}`, { cache: "no-store" })
       .then((res) => res.json())
       .then((data) => {
-        if (Array.isArray(data)) {
+        if (Array.isArray(data) && data.length > 0) {
           setCategories(data);
         } else {
-          console.error("Categories API returned non-array:", data);
+          fetch(`https://digital-product-1-l3qr.onrender.com/api/categories?t=${new Date().getTime()}`, { cache: "no-store" })
+            .then((r) => r.json())
+            .then((remoteData) => { if (Array.isArray(remoteData)) setCategories(remoteData); })
+            .catch(() => {});
         }
       })
-      .catch((err) => console.error("Failed to load categories:", err));
+      .catch(() => {
+        fetch(`https://digital-product-1-l3qr.onrender.com/api/categories?t=${new Date().getTime()}`, { cache: "no-store" })
+          .then((r) => r.json())
+          .then((remoteData) => { if (Array.isArray(remoteData)) setCategories(remoteData); })
+          .catch(() => {});
+      });
+  };
+
+  useEffect(() => {
+    loadCategories();
   }, []);
 
   const handleNameChange = (val: string) => {
@@ -52,42 +64,39 @@ export default function CategoriesPage() {
         setCategories(categories.map((c) => c.id === editingId ? updatedCat : c));
         setEditingId(null);
         
-        fetch("https://digital-product-1-l3qr.onrender.com/api/categories", {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(updatedCat),
-        }).catch(() => {
-          // Revert on failure
-          fetch(`https://digital-product-1-l3qr.onrender.com/api/categories?t=${new Date().getTime()}`, { cache: "no-store" })
-            .then(res => res.json())
-            .then(data => setCategories(data));
-        });
+        Promise.allSettled([
+          fetch("http://localhost:5000/api/categories", {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(updatedCat),
+          }).catch(() => null),
+          fetch("https://digital-product-1-l3qr.onrender.com/api/categories", {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(updatedCat),
+          }).catch(() => null),
+        ]).finally(() => loadCategories());
       } else {
         const newCat = { 
-          id: Date.now().toString(), // temporary id for optimistic UI
+          id: Date.now().toString(),
           name, slug, parentId: parentId || null, metaTitle, metaDescription 
         };
         
         // Optimistic update
         setCategories([...categories, newCat]);
         
-        fetch("https://digital-product-1-l3qr.onrender.com/api/categories", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name, slug, parentId: parentId || null, metaTitle, metaDescription }),
-        })
-        .then(res => res.json())
-        .then(data => {
-            if (data.category) {
-              setCategories(prev => prev.map(c => c.id === newCat.id ? data.category : c));
-            }
-        })
-        .catch(() => {
-          // Revert on failure
-          fetch(`https://digital-product-1-l3qr.onrender.com/api/categories?t=${new Date().getTime()}`, { cache: "no-store" })
-            .then(res => res.json())
-            .then(data => setCategories(data));
-        });
+        Promise.allSettled([
+          fetch("http://localhost:5000/api/categories", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name, slug, parentId: parentId || null, metaTitle, metaDescription }),
+          }).catch(() => null),
+          fetch("https://digital-product-1-l3qr.onrender.com/api/categories", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name, slug, parentId: parentId || null, metaTitle, metaDescription }),
+          }).catch(() => null),
+        ]).finally(() => loadCategories());
       }
 
       // Reset form
@@ -104,23 +113,21 @@ export default function CategoriesPage() {
 
   const handleEdit = (cat: Category) => {
     setEditingId(cat.id);
-    setName(cat.name);
-    setSlug(cat.slug);
+    setName(cat.name || "");
+    setSlug(cat.slug || "");
     setParentId(cat.parentId || "");
-    setMetaTitle(cat.metaTitle);
-    setMetaDescription(cat.metaDescription);
+    setMetaTitle(cat.metaTitle || "");
+    setMetaDescription(cat.metaDescription || "");
   };
 
   const handleDelete = (id: string) => {
     // Optimistic update
-    const previousCategories = [...categories];
     setCategories(categories.filter((c) => c.id !== id));
 
-    fetch(`https://digital-product-1-l3qr.onrender.com/api/categories?id=${id}`, { method: "DELETE" })
-      .catch((err) => {
-        console.error("Failed to delete category:", err);
-        setCategories(previousCategories); // Revert
-      });
+    Promise.allSettled([
+      fetch(`http://localhost:5000/api/categories?id=${id}`, { method: "DELETE" }).catch(() => null),
+      fetch(`https://digital-product-1-l3qr.onrender.com/api/categories?id=${id}`, { method: "DELETE" }).catch(() => null),
+    ]).finally(() => loadCategories());
   };
 
   const getParentName = (pId: string | null) => {
