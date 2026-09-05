@@ -442,7 +442,15 @@ export default function CreateProductPage() {
                       key={tag}
                       className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-xs font-bold cursor-pointer transition-all ${
                         isChecked
-                          ? "bg-primary/10 border-primary text-primary shadow-sm"
+                          ? tag === "FEATURED"
+                            ? "bg-amber-400/15 border-amber-400 text-amber-300 shadow-sm"
+                            : tag === "NEW"
+                            ? "bg-emerald-500/15 border-emerald-500 text-emerald-400 shadow-sm"
+                            : tag === "POPULAR"
+                            ? "bg-orange-500/15 border-orange-500 text-orange-400 shadow-sm"
+                            : tag === "TRENDING"
+                            ? "bg-cyan-500/15 border-cyan-500 text-cyan-400 shadow-sm"
+                            : "bg-red-600/15 border-red-500 text-red-400 shadow-sm"
                           : "bg-background border-border text-muted-foreground hover:border-border/80"
                       }`}
                     >
@@ -452,12 +460,7 @@ export default function CreateProductPage() {
                         onChange={() => toggleFeatureTag(tag)}
                         className="w-4 h-4 accent-primary rounded cursor-pointer"
                       />
-                      <span className="flex items-center gap-1.5">
-                        {tag === "FEATURED" && "⭐"}
-                        {tag === "NEW" && "✨"}
-                        {tag === "POPULAR" && "🔥"}
-                        {tag === "TRENDING" && "📈"}
-                        {tag === "PREMIUM" && "👑"}
+                      <span className="font-extrabold uppercase tracking-wider">
                         {tag}
                       </span>
                     </label>

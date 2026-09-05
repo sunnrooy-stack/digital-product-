@@ -5,6 +5,7 @@ import HeroSection from "@/components/HeroSection";
 import { useCartStore, CartItem } from "@/store/cart";
 import AuthVerificationModal from "@/components/AuthVerificationModal";
 import { motion } from "framer-motion";
+import { getPersonalizedProducts, recordProductView, getActiveUser, getUserSearches, UserPersonalizationProfile } from "@/lib/personalization";
 
 const gradients = [
   "from-indigo-500 to-purple-600",
@@ -19,11 +20,15 @@ const gradients = [
 
 export default function Home() {
   const { addItem, removeItem, isInCart } = useCartStore();
-  const [products, setProducts] = useState<CartItem[]>([]);
+  const [rawProducts, setRawProducts] = useState<any[]>([]);
+  const [products, setProducts] = useState<any[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
   const [storeCategories, setStoreCategories] = useState<any[]>([]);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [pendingProduct, setPendingProduct] = useState<CartItem | null>(null);
+  const [currentUser, setCurrentUser] = useState<UserPersonalizationProfile | null>(null);
+  const [feedMode, setFeedMode] = useState<"personalized" | "all">("personalized");
+  const [recentSearchTags, setRecentSearchTags] = useState<string[]>([]);
 
   const checkUserVerified = () => {
     try {
@@ -36,18 +41,42 @@ export default function Home() {
     return false;
   };
 
-  const handleCardClick = (product: CartItem) => {
-    if (!checkUserVerified()) {
-      setPendingProduct(product);
-      setIsAuthModalOpen(true);
-      return;
-    }
-    if (isInCart(product.id)) {
-      removeItem(product.id);
-    } else {
-      addItem(product);
+  const syncCurrentUser = () => {
+    const u = getActiveUser();
+    setCurrentUser(u);
+    if (u) {
+      setRecentSearchTags(getUserSearches(u.email));
     }
   };
+
+  // Re-rank products whenever raw products, user, or feedMode changes
+  useEffect(() => {
+    if (rawProducts.length === 0) return;
+    if (feedMode === "personalized") {
+      const ranked = getPersonalizedProducts(rawProducts, currentUser);
+      setProducts(ranked);
+    } else {
+      setProducts(rawProducts);
+    }
+  }, [rawProducts, currentUser, feedMode]);
+
+  // Listen to personalization updates (like search from navbar)
+  useEffect(() => {
+    syncCurrentUser();
+    const handlePersonalizationUpdate = () => {
+      syncCurrentUser();
+      if (rawProducts.length > 0) {
+        const updated = getPersonalizedProducts(rawProducts, getActiveUser());
+        setProducts(updated);
+      }
+    };
+    window.addEventListener("personalization_updated", handlePersonalizationUpdate);
+    window.addEventListener("storage", syncCurrentUser);
+    return () => {
+      window.removeEventListener("personalization_updated", handlePersonalizationUpdate);
+      window.removeEventListener("storage", syncCurrentUser);
+    };
+  }, [rawProducts]);
 
   // Fetch real-time products list and categories
   useEffect(() => {
@@ -55,9 +84,11 @@ export default function Home() {
 
     async function loadHomeData() {
       const DEFAULT_PRODUCTS = [
-        { id: "1", title: "SaaS Starter Kit", price: 89, coverImage: "", sellerName: "DevPro", tags: ["FEATURED", "NEW"], isFeatured: true },
-        { id: "2", title: "AI Prompt Pack", price: 29, coverImage: "", sellerName: "PromptMaster", tags: ["TRENDING", "POPULAR"], isFeatured: true },
-        { id: "3", title: "React Dashboard", price: 49, coverImage: "", sellerName: "UIForge", tags: ["PREMIUM"], isFeatured: true }
+        { id: "1", title: "SaaS Starter Kit", price: 89, coverImage: "", sellerName: "DevPro", tags: ["FEATURED", "NEW", "REACT", "SAAS"], isFeatured: true, category: "Templates", description: "Production-ready SaaS template with auth and stripe" },
+        { id: "2", title: "AI Prompt Pack", price: 29, coverImage: "", sellerName: "PromptMaster", tags: ["TRENDING", "POPULAR", "AI", "PROMPTS"], isFeatured: true, category: "AI Prompts", description: "500+ curated prompts for ChatGPT and Midjourney" },
+        { id: "3", title: "React Dashboard", price: 49, coverImage: "", sellerName: "UIForge", tags: ["PREMIUM", "REACT", "UI"], isFeatured: true, category: "Templates", description: "Responsive analytics dashboard components" },
+        { id: "4", title: "DaVinci Resolve Cinematic LUTs", price: 35, coverImage: "", sellerName: "FilmGrade", tags: ["PRESETS", "VIDEO", "DAVINCI"], isFeatured: true, category: "Presets", description: "Hollywood grade color LUTs and transitions" },
+        { id: "5", title: "Freelancer Contract & Pitch Kit", price: 25, coverImage: "", sellerName: "StudioLegal", tags: ["BUSINESS", "FREELANCE"], isFeatured: true, category: "Templates", description: "Design proposals, client contracts, and invoices" }
       ];
 
       let data: any[] | null = null;
@@ -105,18 +136,22 @@ export default function Home() {
           }
         });
 
-        const mergedList = Array.from(map.values());
-        const featuredProducts = mergedList.filter((p: any) => p.isFeatured === true);
-        const mapped = (featuredProducts.length > 0 ? featuredProducts : mergedList).map((p: any) => ({
+        const mergedList = Array.from(map.values()).map((p: any) => ({
           id: String(p.id),
           title: p.title,
           price: Number(p.price),
           coverImage: p.coverImage || "",
           sellerName: p.sellerName || "Admin",
+          category: p.category || "General",
+          description: p.description || "",
           tags: p.tags || [],
           isFeatured: p.isFeatured !== false,
         }));
-        setProducts(mapped);
+
+        setRawProducts(mergedList);
+        const user = getActiveUser();
+        const initialPersonalized = getPersonalizedProducts(mergedList, user);
+        setProducts(initialPersonalized);
         setLoadingProducts(false);
       }
 
@@ -169,19 +204,71 @@ export default function Home() {
     <div className="flex flex-col">
       <HeroSection />
 
-      {/* Featured Products Section */}
+      {/* Featured / Personalized Products Section */}
       <section className="py-20 px-6 lg:px-12 max-w-[90rem] mx-auto w-full">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold tracking-tight sm:text-4xl mb-3">
-            Trending Products
-          </h2>
-          <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-            Hand-picked premium assets to accelerate your projects.
-          </p>
+        <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
+          <div>
+            {currentUser ? (
+              <div className="flex items-center gap-2 mb-2">
+                <span className="px-3 py-1 text-xs font-bold rounded-full bg-primary/20 text-primary border border-primary/30 flex items-center gap-1.5 shadow-sm">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                  Personalized for {currentUser.name} • {currentUser.role}
+                </span>
+              </div>
+            ) : null}
+            <h2 className="text-3xl font-extrabold tracking-tight sm:text-4xl text-foreground">
+              {currentUser ? "✨ Recommended For You" : "🔥 Trending Products"}
+            </h2>
+            <p className="text-muted-foreground text-sm sm:text-base mt-1">
+              {currentUser
+                ? `Algorithmic feed tailored to your ${currentUser.role} interests, searches & activity.`
+                : "Hand-picked premium assets to accelerate your projects."}
+            </p>
+          </div>
+
+          {/* Algorithm Feed Mode Toggle */}
+          <div className="flex items-center gap-2 bg-muted/60 p-1.5 rounded-2xl border border-border shrink-0 self-start md:self-auto">
+            <button
+              onClick={() => setFeedMode("personalized")}
+              className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                feedMode === "personalized"
+                  ? "bg-primary text-white shadow-md"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <span>✨</span> Algorithmic Feed
+            </button>
+            <button
+              onClick={() => setFeedMode("all")}
+              className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                feedMode === "all"
+                  ? "bg-primary text-white shadow-md"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <span>📋</span> All Products
+            </button>
+          </div>
         </div>
 
+        {/* Recent Search Interest Chips */}
+        {recentSearchTags.length > 0 && feedMode === "personalized" && (
+          <div className="flex items-center gap-2 mb-6 flex-wrap animate-in fade-in">
+            <span className="text-xs font-semibold text-muted-foreground">Your search signals:</span>
+            {recentSearchTags.slice(0, 5).map((query, i) => (
+              <a
+                key={i}
+                href={`/products?search=${encodeURIComponent(query)}`}
+                className="text-xs px-3 py-1 rounded-full bg-muted border border-border hover:border-primary/50 text-foreground/80 hover:text-primary transition-all flex items-center gap-1"
+              >
+                <span>🔍</span> {query}
+              </a>
+            ))}
+          </div>
+        )}
+
         {loadingProducts ? (
-          <div className="text-center text-muted-foreground py-10">Loading trending products...</div>
+          <div className="text-center text-muted-foreground py-10">Loading personalized products...</div>
         ) : products.length === 0 ? (
           <div className="text-center text-muted-foreground py-10 glass-panel border border-border/70 rounded-3xl mx-auto max-w-lg">
             <span className="text-4xl block mb-4">🛒</span>
@@ -200,7 +287,8 @@ export default function Home() {
                   whileInView={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.4, delay: index * 0.05 }}
                   viewport={{ once: true }}
-                  className="glass-panel rounded-2xl p-3.5 transition-all hover:scale-[1.02] cursor-pointer group flex flex-col justify-between"
+                  className="glass-panel rounded-2xl p-3.5 transition-all hover:scale-[1.02] cursor-pointer group flex flex-col justify-between relative overflow-hidden"
+                  onClick={() => recordProductView(product, currentUser?.email)}
                 >
                   <div>
                     <a href={`/product?id=${product.id}`}>
@@ -212,26 +300,68 @@ export default function Home() {
                             {["📦", "🤖", "📊", "📚", "🎬", "🎨", "💻", "✨"][gradientIndex]}
                           </span>
                         )}
+
+                        {/* Feature Badge Overlay on Image (Replaced Match %) */}
+                        {(() => {
+                          const tagsUpper = (product.tags || []).map((t: string) => t.toUpperCase());
+                          if (product.isFeatured || tagsUpper.includes("FEATURED")) {
+                            return (
+                              <div className="absolute top-2 right-2 z-10 shadow-md">
+                                <span className="text-[10px] bg-amber-400 text-slate-950 px-2.5 py-0.5 rounded-full font-black uppercase tracking-wider">
+                                  FEATURED
+                                </span>
+                              </div>
+                            );
+                          }
+                          if (tagsUpper.includes("NEW")) {
+                            return (
+                              <div className="absolute top-2 right-2 z-10 shadow-md">
+                                <span className="text-[10px] bg-emerald-500 text-slate-950 px-2.5 py-0.5 rounded-full font-black uppercase tracking-wider">
+                                  NEW
+                                </span>
+                              </div>
+                            );
+                          }
+                          if (tagsUpper.includes("POPULAR")) {
+                            return (
+                              <div className="absolute top-2 right-2 z-10 shadow-md">
+                                <span className="text-[10px] bg-orange-500 text-white px-2.5 py-0.5 rounded-full font-black uppercase tracking-wider">
+                                  POPULAR
+                                </span>
+                              </div>
+                            );
+                          }
+                          if (tagsUpper.includes("TRENDING")) {
+                            return (
+                              <div className="absolute top-2 right-2 z-10 shadow-md">
+                                <span className="text-[10px] bg-cyan-400 text-slate-950 px-2.5 py-0.5 rounded-full font-black uppercase tracking-wider">
+                                  TRENDING
+                                </span>
+                              </div>
+                            );
+                          }
+                          if (tagsUpper.includes("PREMIUM")) {
+                            return (
+                              <div className="absolute top-2 right-2 z-10 shadow-md">
+                                <span className="text-[10px] bg-red-600 text-white px-2.5 py-0.5 rounded-full font-black uppercase tracking-wider">
+                                  PREMIUM
+                                </span>
+                              </div>
+                            );
+                          }
+                          return null;
+                        })()}
                       </div>
                     </a>
 
-                    {/* Feature Badges */}
-                    <div className="flex flex-wrap gap-1 mb-2">
-                      {product.isFeatured && !(product.tags || []).map((t: string)=>t.toUpperCase()).includes("FEATURED") && (
-                        <span className="text-[9px] bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 px-2 py-0.5 rounded-full font-extrabold uppercase tracking-wider">
-                          ⭐ FEATURED
+                    {/* Algorithmic Reason Pill */}
+                    {feedMode === "personalized" && product.recommendationReason && (
+                      <div className="mb-2">
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 line-clamp-1">
+                          {product.recommendationReason}
                         </span>
-                      )}
-                      {(product.tags || []).map((tag: string) => {
-                        const uTag = tag.toUpperCase();
-                        if (uTag === "FEATURED") return <span key={tag} className="text-[9px] bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 px-2 py-0.5 rounded-full font-extrabold uppercase tracking-wider">⭐ FEATURED</span>;
-                        if (uTag === "NEW") return <span key={tag} className="text-[9px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-full font-extrabold uppercase tracking-wider">✨ NEW</span>;
-                        if (uTag === "POPULAR") return <span key={tag} className="text-[9px] bg-amber-500/20 text-amber-300 border border-amber-500/30 px-2 py-0.5 rounded-full font-extrabold uppercase tracking-wider">🔥 POPULAR</span>;
-                        if (uTag === "TRENDING") return <span key={tag} className="text-[9px] bg-sky-500/20 text-sky-300 border border-sky-500/30 px-2 py-0.5 rounded-full font-extrabold uppercase tracking-wider">📈 TRENDING</span>;
-                        if (uTag === "PREMIUM") return <span key={tag} className="text-[9px] bg-gradient-to-r from-amber-500/30 to-purple-500/30 text-amber-300 border border-amber-400/30 px-2 py-0.5 rounded-full font-extrabold uppercase tracking-wider">👑 PREMIUM</span>;
-                        return null;
-                      })}
-                    </div>
+                      </div>
+                    )}
 
                     <p className="text-xs text-muted-foreground mb-1">by {product.sellerName}</p>
                     <h3 className="font-semibold text-base mb-2 line-clamp-2">{product.title}</h3>
@@ -254,8 +384,11 @@ export default function Home() {
                       </a>
                     ) : (
                       <button
-                        onClick={() => inCart ? removeItem(product.id) : addItem(product)}
-                        className={`text-xs font-medium px-3.5 py-1.5 rounded-full transition-colors whitespace-nowrap ${
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          inCart ? removeItem(product.id) : addItem(product);
+                        }}
+                        className={`text-xs font-medium px-3.5 py-1.5 rounded-full transition-colors whitespace-nowrap cursor-pointer ${
                           inCart
                             ? "bg-primary/20 text-primary border border-primary/30"
                             : "bg-foreground text-background hover:bg-foreground/90"

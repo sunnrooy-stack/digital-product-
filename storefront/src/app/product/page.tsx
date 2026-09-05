@@ -3,8 +3,8 @@
 import React, { useState, useEffect, Suspense } from "react";
 import { useCartStore, CartItem } from "@/store/cart";
 import { useSearchParams } from "next/navigation";
-
 import AuthVerificationModal from "@/components/AuthVerificationModal";
+import { recordProductView, getPersonalizedProducts, getActiveUser, UserPersonalizationProfile } from "@/lib/personalization";
 
 function ProductDetailContent() {
   const searchParams = useSearchParams();
@@ -19,6 +19,8 @@ function ProductDetailContent() {
 
   const { addItem, removeItem, isInCart } = useCartStore();
   const [product, setProduct] = useState<any>(null);
+  const [relatedProducts, setRelatedProducts] = useState<any[]>([]);
+  const [currentUser, setCurrentUser] = useState<UserPersonalizationProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeImage, setActiveImage] = useState<string>("");
 
@@ -352,17 +354,17 @@ function ProductDetailContent() {
           {/* Feature Badges */}
           <div className="flex flex-wrap gap-1.5 mb-3">
             {product.isFeatured && !(product.tags || []).map((t: string)=>t.toUpperCase()).includes("FEATURED") && (
-              <span className="text-xs bg-indigo-500/20 text-indigo-400 border border-indigo-500/40 px-3 py-1 rounded-full font-extrabold uppercase tracking-wider">
-                ⭐ FEATURED
+              <span className="text-xs bg-amber-400 text-slate-950 px-3 py-1 rounded-full font-black uppercase tracking-wider shadow-sm">
+                FEATURED
               </span>
             )}
             {(product.tags || []).map((tag: string) => {
               const uTag = tag.toUpperCase();
-              if (uTag === "FEATURED") return <span key={tag} className="text-xs bg-indigo-500/20 text-indigo-400 border border-indigo-500/40 px-3 py-1 rounded-full font-extrabold uppercase tracking-wider">⭐ FEATURED</span>;
-              if (uTag === "NEW") return <span key={tag} className="text-xs bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 px-3 py-1 rounded-full font-extrabold uppercase tracking-wider">✨ NEW</span>;
-              if (uTag === "POPULAR") return <span key={tag} className="text-xs bg-amber-500/20 text-amber-400 border border-amber-500/40 px-3 py-1 rounded-full font-extrabold uppercase tracking-wider">🔥 POPULAR</span>;
-              if (uTag === "TRENDING") return <span key={tag} className="text-xs bg-sky-500/20 text-sky-400 border border-sky-500/40 px-3 py-1 rounded-full font-extrabold uppercase tracking-wider">📈 TRENDING</span>;
-              if (uTag === "PREMIUM") return <span key={tag} className="text-xs bg-gradient-to-r from-amber-500/30 to-purple-500/30 text-amber-300 border border-amber-400/40 px-3 py-1 rounded-full font-extrabold uppercase tracking-wider">👑 PREMIUM</span>;
+              if (uTag === "FEATURED") return <span key={tag} className="text-xs bg-amber-400 text-slate-950 px-3 py-1 rounded-full font-black uppercase tracking-wider shadow-sm">FEATURED</span>;
+              if (uTag === "NEW") return <span key={tag} className="text-xs bg-emerald-500 text-slate-950 px-3 py-1 rounded-full font-black uppercase tracking-wider shadow-sm">NEW</span>;
+              if (uTag === "POPULAR") return <span key={tag} className="text-xs bg-orange-500 text-white px-3 py-1 rounded-full font-black uppercase tracking-wider shadow-sm">POPULAR</span>;
+              if (uTag === "TRENDING") return <span key={tag} className="text-xs bg-cyan-400 text-slate-950 px-3 py-1 rounded-full font-black uppercase tracking-wider shadow-sm">TRENDING</span>;
+              if (uTag === "PREMIUM") return <span key={tag} className="text-xs bg-red-600 text-white px-3 py-1 rounded-full font-black uppercase tracking-wider shadow-sm">PREMIUM</span>;
               return (
                 <span key={tag} className="text-xs bg-muted px-2.5 py-1 rounded-full text-muted-foreground font-mono">
                   #{tag}
@@ -488,6 +490,42 @@ function ProductDetailContent() {
               ))}
             </ul>
           </div>
+          
+          {/* RELATED PERSONALIZED RECOMMENDATIONS SECTION */}
+          {relatedProducts && relatedProducts.length > 0 && (
+            <div className="mt-12 border-t border-border/70 pt-12">
+              <div className="flex items-center justify-between mb-8">
+                <div>
+                  <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 text-xs font-bold mb-1">
+                    <span>🎯</span> Recommended For You
+                  </div>
+                  <h2 className="text-2xl font-extrabold text-foreground">
+                    You May Also Like
+                  </h2>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {relatedProducts.map((rel: any) => (
+                  <a
+                    key={rel.id}
+                    href={`/product?id=${rel.id}`}
+                    className="p-4 rounded-2xl border border-border bg-card hover:border-primary/50 transition-all flex items-center gap-4 group"
+                  >
+                    <div className="h-16 w-16 rounded-lg bg-slate-800 overflow-hidden shrink-0">
+                      {rel.coverImage && <img src={rel.coverImage} className="w-full h-full object-cover" alt={rel.title} />}
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-sm text-foreground line-clamp-1">{rel.title}</h4>
+                      <p className="text-xs text-primary font-bold">
+                        {Number(rel.price) <= 0 ? "FREE" : `₹${Number(rel.price).toFixed(2)}`}
+                      </p>
+                    </div>
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

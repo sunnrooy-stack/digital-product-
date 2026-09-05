@@ -2,11 +2,10 @@
 
 import React, { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-
 import { auth } from "@/lib/firebase";
 import { onAuthStateChanged } from "firebase/auth";
-
 import AuthVerificationModal from "@/components/AuthVerificationModal";
+import { getPersonalizedProducts, getActiveUser } from "@/lib/personalization";
 
 function DashboardContent() {
   const searchParams = useSearchParams();
@@ -16,6 +15,7 @@ function DashboardContent() {
   const [verifiedUser, setVerifiedUser] = useState<any>(null);
   const [purchases, setPurchases] = useState<any[]>([]);
   const [wishlist, setWishlist] = useState<any[]>([]);
+  const [recommendedPicks, setRecommendedPicks] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
@@ -89,6 +89,21 @@ function DashboardContent() {
         } catch (err) {
           console.error("Failed to fetch user orders", err);
         }
+
+        // Fetch products to generate personalized recommendations for user
+        try {
+          let pRes = await fetch("http://localhost:5000/api/products").catch(() => null);
+          if (!pRes || !pRes.ok) {
+            pRes = await fetch("https://digital-product-1-l3qr.onrender.com/api/products").catch(() => null);
+          }
+          if (pRes && pRes.ok) {
+            const allProds = await pRes.json();
+            if (Array.isArray(allProds)) {
+              const ranked = getPersonalizedProducts(allProds, vUser || getActiveUser());
+              setRecommendedPicks(ranked.slice(0, 3));
+            }
+          }
+        } catch (e) {}
       }
       setIsLoading(false);
     });
@@ -141,13 +156,19 @@ function DashboardContent() {
       {/* Top Header */}
       <div className="flex items-center justify-between border-b border-border pb-6">
         <div>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-xs font-bold px-3 py-1 rounded-full bg-primary/10 text-primary border border-primary/20">
+              {verifiedUser?.role || "Member"} Profile
+            </span>
+          </div>
           <h2 className="text-3xl font-extrabold tracking-tight capitalize">
-            {activeTab === "overview" ? "My Dashboard" : `${activeTab} Details`}
+            {activeTab === "overview" ? `Welcome, ${verifiedUser?.name || "User"}` : `${activeTab} Details`}
           </h2>
           <p className="text-muted-foreground text-sm mt-1">
             Access your templates, manage preferences, and review your account activity.
           </p>
         </div>
+
         <div className="flex gap-2 bg-muted/50 p-1.5 rounded-xl border border-border">
           {["overview", "purchases", "wishlist", "settings"].map((tab) => (
             <button
@@ -178,10 +199,58 @@ function DashboardContent() {
               <p className="text-4xl font-extrabold">{wishlist.length}</p>
             </div>
             <div className="glass-panel p-6 rounded-2xl">
-              <p className="text-sm font-medium text-muted-foreground mb-2">Reviews Left</p>
-              <p className="text-4xl font-extrabold">0</p>
+              <p className="text-sm font-medium text-muted-foreground mb-2">Your Interest Profile</p>
+              <p className="text-xl font-extrabold text-foreground">{verifiedUser?.role || "Creator"}</p>
             </div>
           </div>
+
+          {/* PERSONALIZED RECOMMENDATION PICKS */}
+          {recommendedPicks.length > 0 && (
+            <section className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-xl font-bold flex items-center gap-2">
+                    <span>✨</span> Recommended for {verifiedUser?.name || "You"}
+                  </h3>
+                  <p className="text-xs text-muted-foreground">Curated based on your {verifiedUser?.role || "role"} and recent activity.</p>
+                </div>
+                <a href="/products" className="text-xs font-bold text-primary hover:underline">
+                  Browse All →
+                </a>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {recommendedPicks.map((p: any) => (
+                  <a
+                    key={p.id}
+                    href={`/product?id=${p.id}`}
+                    className="glass-panel p-4 rounded-2xl border border-border/80 hover:border-primary/50 transition-all flex flex-col justify-between group"
+                  >
+                    <div>
+                      <div className="h-28 w-full rounded-xl bg-slate-900 mb-3 overflow-hidden flex items-center justify-center">
+                        {p.coverImage ? (
+                          <img src={p.coverImage} alt={p.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                        ) : (
+                          <span className="text-3xl">📦</span>
+                        )}
+                      </div>
+                      {p.recommendationReason && (
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-indigo-500/15 text-indigo-300 border border-indigo-500/20 line-clamp-1 mb-1.5 inline-block">
+                          {p.recommendationReason}
+                        </span>
+                      )}
+                      <h4 className="font-bold text-sm text-foreground line-clamp-1">{p.title}</h4>
+                    </div>
+                    <div className="flex items-center justify-between pt-3 border-t border-border/40 mt-3">
+                      <span className="font-extrabold text-sm text-primary">
+                        {Number(p.price) <= 0 ? "FREE" : `₹${Number(p.price).toFixed(2)}`}
+                      </span>
+                      <span className="text-xs text-primary font-bold">View Asset →</span>
+                    </div>
+                  </a>
+                ))}
+              </div>
+            </section>
+          )}
 
           <section className="space-y-4">
             <h3 className="text-2xl font-bold">Recent Purchases</h3>

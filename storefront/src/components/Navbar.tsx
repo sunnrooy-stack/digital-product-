@@ -7,16 +7,20 @@ import { auth } from "@/lib/firebase";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 
 import AuthVerificationModal from "./AuthVerificationModal";
+import { recordUserSearch, getUserSearches } from "@/lib/personalization";
 
 export default function Navbar() {
   const [mounted, setMounted] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [searchFocused, setSearchFocused] = useState(false);
+  const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const [user, setUser] = useState<any>(null);
   const [verifiedUser, setVerifiedUser] = useState<any>(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const searchContainerRef = useRef<HTMLDivElement>(null);
   
   const syncUserToBackend = async (uData: any) => {
     if (!uData || !uData.email) return;
@@ -42,8 +46,10 @@ export default function Navbar() {
         const parsed = JSON.parse(stored);
         setVerifiedUser(parsed);
         syncUserToBackend(parsed);
+        setRecentSearches(getUserSearches(parsed.email));
       } else {
         setVerifiedUser(null);
+        setRecentSearches(getUserSearches("guest"));
       }
     } catch (e) {}
   };
@@ -74,10 +80,21 @@ export default function Navbar() {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setProfileOpen(false);
       }
+      if (searchContainerRef.current && !searchContainerRef.current.contains(event.target as Node)) {
+        setSearchFocused(false);
+      }
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  const handleSearchSubmit = (query: string) => {
+    if (!query.trim()) return;
+    const q = query.trim();
+    recordUserSearch(q, verifiedUser?.email || user?.email);
+    setSearchFocused(false);
+    window.location.href = `/products?search=${encodeURIComponent(q)}`;
+  };
 
   const navLinks = [
     { href: "/", label: "Home" },
@@ -97,21 +114,51 @@ export default function Navbar() {
           </span>
         </Link>
 
-        {/* Center: Search Bar (New Feature) */}
-        <div className="hidden md:flex flex-1 max-w-xl mx-8 relative">
-          <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground text-sm">🔍</span>
+        {/* Center: Search Bar with Personalization */}
+        <div className="hidden md:flex flex-1 max-w-xl mx-8 relative" ref={searchContainerRef}>
+          <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground text-sm z-10">🔍</span>
           <input
             type="text"
-            placeholder="Search premium templates, design kits, source codes..."
+            placeholder={verifiedUser ? `Search for ${verifiedUser.role || "your"} templates, presets, tools...` : "Search premium templates, design kits, source codes..."}
             value={searchQuery}
+            onFocus={() => {
+              setSearchFocused(true);
+              setRecentSearches(getUserSearches(verifiedUser?.email || user?.email));
+            }}
             onChange={(e) => setSearchQuery(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === "Enter" && searchQuery.trim()) {
-                window.location.href = `/products?search=${encodeURIComponent(searchQuery.trim())}`;
+              if (e.key === "Enter") {
+                handleSearchSubmit(searchQuery);
               }
             }}
             className="w-full bg-muted/50 border border-border/70 rounded-full pl-10 pr-4 py-2 text-sm text-foreground focus:ring-2 focus:ring-primary focus:outline-none focus:bg-background transition-all"
           />
+
+          {/* Recent Searches Dropdown */}
+          {searchFocused && recentSearches.length > 0 && (
+            <div className="absolute top-full left-0 right-0 mt-2 bg-card/95 border border-border/80 rounded-2xl shadow-2xl p-3 backdrop-blur-xl z-50 animate-in fade-in slide-in-from-top-2">
+              <div className="flex items-center justify-between px-2 pb-2 border-b border-border/50 text-xs font-semibold text-muted-foreground">
+                <span className="flex items-center gap-1.5">
+                  <span>✨</span> Personalized Search History
+                </span>
+                <span className="text-[10px] text-primary/80 font-normal">Learns your preferences</span>
+              </div>
+              <div className="flex flex-wrap gap-1.5 pt-2">
+                {recentSearches.slice(0, 6).map((term, i) => (
+                  <button
+                    key={i}
+                    onClick={() => {
+                      setSearchQuery(term);
+                      handleSearchSubmit(term);
+                    }}
+                    className="flex items-center gap-1 px-3 py-1 text-xs rounded-full bg-muted/80 hover:bg-primary hover:text-white transition-all text-foreground/80 border border-border/50 cursor-pointer"
+                  >
+                    <span>🔍</span> {term}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Right: Nav Links + Actions */}

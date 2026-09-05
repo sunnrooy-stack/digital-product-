@@ -30,6 +30,8 @@ async function seedRealOrdersAndProducts() {
 
 export const getProducts = async (req: Request, res: Response) => {
   try {
+    const { role, userId, search } = req.query;
+
     let dbProducts: any[] = [];
     try {
       dbProducts = await prisma.product.findMany({
@@ -75,6 +77,61 @@ export const getProducts = async (req: Request, res: Response) => {
     if (result.length === 0 && inMemoryProductsStore.length === 0) {
       await seedRealProducts();
       result = inMemoryProductsStore;
+    }
+
+    // Backend Personalization Algorithm if role or userId or search query passed
+    if (role || userId || search) {
+      const searchStr = typeof search === "string" ? search.toLowerCase().trim() : "";
+      const userRoleStr = typeof role === "string" ? role.toLowerCase() : "";
+      const userIdentifier = typeof userId === "string" ? userId : "user";
+
+      const ROLE_KEYWORDS: Record<string, string[]> = {
+        developer: ["code", "saas", "template", "react", "nextjs", "dashboard", "api", "database", "dev", "programming"],
+        "content creator": ["prompt", "ai", "creator", "youtube", "social", "stream", "thumbnail", "reels", "music"],
+        editor: ["preset", "after effects", "premiere", "davinci", "video", "motion", "capcut", "alight motion", "lut"],
+        freelancer: ["ui", "ux", "figma", "portfolio", "client", "business", "marketing", "freelance", "proposal"]
+      };
+
+      const matchedRoleKws = ROLE_KEYWORDS[userRoleStr] || [];
+
+      result = result.map((p) => {
+        let score = 0;
+        let reason = "✨ Recommended Pick";
+        const text = `${p.title || ""} ${p.description || ""} ${p.category || ""} ${(p.tags || []).join(" ")}`.toLowerCase();
+
+        // Search match boost
+        if (searchStr && text.includes(searchStr)) {
+          score += 50;
+          reason = `🔍 Matches "${searchStr}"`;
+        }
+
+        // Role match boost
+        let roleMatches = 0;
+        for (const kw of matchedRoleKws) {
+          if (text.includes(kw)) roleMatches++;
+        }
+        if (roleMatches > 0) {
+          score += Math.min(roleMatches * 15, 45);
+          if (!searchStr) reason = `🎯 Curated for ${role}`;
+        }
+
+        if (p.isFeatured) score += 10;
+
+        // User deterministic diversity hash
+        let hash = 0;
+        const seedStr = `${userIdentifier}_${p.id || p.title}`;
+        for (let i = 0; i < seedStr.length; i++) {
+          hash = (hash << 5) - hash + seedStr.charCodeAt(i);
+          hash |= 0;
+        }
+        score += (Math.abs(hash) % 100) / 10;
+
+        return {
+          ...p,
+          recommendationScore: Math.round(score * 10) / 10,
+          recommendationReason: reason,
+        };
+      }).sort((a, b) => (b.recommendationScore || 0) - (a.recommendationScore || 0));
     }
 
     res.status(200).json(result);

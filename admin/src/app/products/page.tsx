@@ -791,17 +791,17 @@ function ProductsContent() {
                     {/* Feature Badges & Tags */}
                     <div className="flex flex-wrap gap-1.5 pt-2">
                       {prod.isFeatured && !(prod.tags || []).map(t=>t.toUpperCase()).includes("FEATURED") && (
-                        <span className="text-[10px] bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 px-2 py-0.5 rounded-full font-extrabold uppercase tracking-wider">
-                          ⭐ FEATURED
+                        <span className="text-[9px] bg-amber-400 text-slate-950 px-2.5 py-0.5 rounded-full font-black uppercase tracking-wider shadow-sm">
+                          FEATURED
                         </span>
                       )}
                       {(prod.tags || []).map((tag) => {
                         const uTag = tag.toUpperCase();
-                        if (uTag === "FEATURED") return <span key={tag} className="text-[10px] bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 px-2 py-0.5 rounded-full font-extrabold uppercase tracking-wider">⭐ FEATURED</span>;
-                        if (uTag === "NEW") return <span key={tag} className="text-[10px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full font-extrabold uppercase tracking-wider">✨ NEW</span>;
-                        if (uTag === "POPULAR") return <span key={tag} className="text-[10px] bg-amber-500/20 text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded-full font-extrabold uppercase tracking-wider">🔥 POPULAR</span>;
-                        if (uTag === "TRENDING") return <span key={tag} className="text-[10px] bg-sky-500/20 text-sky-400 border border-sky-500/30 px-2 py-0.5 rounded-full font-extrabold uppercase tracking-wider">📈 TRENDING</span>;
-                        if (uTag === "PREMIUM") return <span key={tag} className="text-[10px] bg-gradient-to-r from-amber-500/30 to-purple-500/30 text-amber-300 border border-amber-400/30 px-2 py-0.5 rounded-full font-extrabold uppercase tracking-wider">👑 PREMIUM</span>;
+                        if (uTag === "FEATURED") return <span key={tag} className="text-[9px] bg-amber-400 text-slate-950 px-2.5 py-0.5 rounded-full font-black uppercase tracking-wider shadow-sm">FEATURED</span>;
+                        if (uTag === "NEW") return <span key={tag} className="text-[9px] bg-emerald-500 text-slate-950 px-2.5 py-0.5 rounded-full font-black uppercase tracking-wider shadow-sm">NEW</span>;
+                        if (uTag === "POPULAR") return <span key={tag} className="text-[9px] bg-orange-500 text-white px-2.5 py-0.5 rounded-full font-black uppercase tracking-wider shadow-sm">POPULAR</span>;
+                        if (uTag === "TRENDING") return <span key={tag} className="text-[9px] bg-cyan-400 text-slate-950 px-2.5 py-0.5 rounded-full font-black uppercase tracking-wider shadow-sm">TRENDING</span>;
+                        if (uTag === "PREMIUM") return <span key={tag} className="text-[9px] bg-red-600 text-white px-2.5 py-0.5 rounded-full font-black uppercase tracking-wider shadow-sm">PREMIUM</span>;
                         return (
                           <span key={tag} className="text-[10px] bg-muted px-2 py-0.5 rounded text-muted-foreground font-mono">
                             #{tag}
@@ -953,7 +953,15 @@ function ProductsContent() {
                         key={tag}
                         className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-xs font-bold cursor-pointer transition-all ${
                           isChecked
-                            ? "bg-primary/10 border-primary text-primary shadow-sm"
+                            ? tag === "FEATURED"
+                              ? "bg-amber-400/15 border-amber-400 text-amber-300 shadow-sm"
+                              : tag === "NEW"
+                              ? "bg-emerald-500/15 border-emerald-500 text-emerald-400 shadow-sm"
+                              : tag === "POPULAR"
+                              ? "bg-orange-500/15 border-orange-500 text-orange-400 shadow-sm"
+                              : tag === "TRENDING"
+                              ? "bg-cyan-500/15 border-cyan-500 text-cyan-400 shadow-sm"
+                              : "bg-red-600/15 border-red-500 text-red-400 shadow-sm"
                             : "bg-background border-border text-muted-foreground hover:border-border/80"
                         }`}
                       >
@@ -963,12 +971,7 @@ function ProductsContent() {
                           onChange={() => toggleFeatureTag(tag)}
                           className="w-4 h-4 accent-primary rounded cursor-pointer"
                         />
-                        <span className="flex items-center gap-1.5">
-                          {tag === "FEATURED" && "⭐"}
-                          {tag === "NEW" && "✨"}
-                          {tag === "POPULAR" && "🔥"}
-                          {tag === "TRENDING" && "📈"}
-                          {tag === "PREMIUM" && "👑"}
+                        <span className="font-extrabold uppercase tracking-wider">
                           {tag}
                         </span>
                       </label>

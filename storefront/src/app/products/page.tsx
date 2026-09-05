@@ -4,6 +4,7 @@ import React, { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { useCartStore, CartItem } from "@/store/cart";
 import { motion } from "framer-motion";
+import { getPersonalizedProducts, recordUserSearch, recordProductView, getActiveUser, getUserSearches, UserPersonalizationProfile } from "@/lib/personalization";
 
 interface Product {
   id: string;
@@ -15,6 +16,8 @@ interface Product {
   coverImage: string;
   sellerName: string;
   isFeatured: boolean;
+  recommendationReason?: string;
+  recommendationScore?: number;
 }
 
 const gradients = [
@@ -37,6 +40,17 @@ function ProductsContent() {
   const [searchQuery, setSearchQuery] = useState(initialSearch);
   const [selectedCategory, setSelectedCategory] = useState(initialCategory);
   const [storeCategories, setStoreCategories] = useState<any[]>([]);
+  const [currentUser, setCurrentUser] = useState<UserPersonalizationProfile | null>(null);
+  const [sortBy, setSortBy] = useState<"personalized" | "featured" | "price-low" | "price-high" | "newest">("personalized");
+  const [userSearchList, setUserSearchList] = useState<string[]>([]);
+
+  useEffect(() => {
+    const u = getActiveUser();
+    setCurrentUser(u);
+    if (u) {
+      setUserSearchList(getUserSearches(u.email));
+    }
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -314,6 +328,22 @@ function ProductsContent() {
     return matchesSearch && matchesCategory && matchesBadge && matchesPlatform && matchesAiTool && matchesCourseTopic && matchesDesignTopic && matchesPresetPlatform && matchesPresetSoftware;
   });
 
+  const processedProducts = React.useMemo(() => {
+    let list = [...filteredProducts];
+    if (sortBy === "personalized") {
+      list = getPersonalizedProducts(list, currentUser) as any[];
+    } else if (sortBy === "featured") {
+      list.sort((a, b) => (b.isFeatured ? 1 : 0) - (a.isFeatured ? 1 : 0));
+    } else if (sortBy === "price-low") {
+      list.sort((a, b) => a.price - b.price);
+    } else if (sortBy === "price-high") {
+      list.sort((a, b) => b.price - a.price);
+    } else if (sortBy === "newest") {
+      list.reverse();
+    }
+    return list;
+  }, [filteredProducts, sortBy, currentUser]);
+
   const isSoftwareContext = 
     selectedCategory.toLowerCase().includes("software") || 
     /\bsoftware\b/i.test(searchQuery);
@@ -403,9 +433,17 @@ function ProductsContent() {
       {/* Top Banner with Software OS, AI Tool, Course Topic, Design Topic or Presets filter on the Right Side */}
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
         <div className="text-left space-y-2 max-w-2xl">
+          {currentUser && (
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/15 text-primary border border-primary/30 text-xs font-extrabold mb-1 shadow-sm">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+              Curated for {currentUser.name} ({currentUser.role})
+            </div>
+          )}
           <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight">Explore Digital Store</h1>
           <p className="text-muted-foreground text-base md:text-lg">
-            Browse, filter, and buy premium resources curated by top design and software developers.
+            {currentUser 
+              ? `Browse custom-ranked digital products tailored to your ${currentUser.role} interests and searches.`
+              : "Browse, filter, and buy premium resources curated by top design and software developers."}
           </p>
         </div>
 
@@ -595,15 +633,37 @@ function ProductsContent() {
       {/* Filter and Search Bar */}
       <div className="flex flex-col gap-5 bg-muted/20 p-6 rounded-2xl border border-border">
         {/* Top Middle Search Bar */}
-        <div className="w-full max-w-lg mx-auto relative">
-          <span className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-muted-foreground text-sm">🔍</span>
-          <input
-            type="text"
-            placeholder="Search catalog..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-background border border-border rounded-xl pl-10 pr-4 py-2.5 text-sm text-foreground shadow-sm focus:ring-2 focus:ring-primary focus:outline-none transition-all"
-          />
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="w-full max-w-lg relative">
+            <span className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-muted-foreground text-sm">🔍</span>
+            <input
+              type="text"
+              placeholder={currentUser ? `Search personalized for ${currentUser.role}...` : "Search catalog..."}
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                if (e.target.value.trim().length > 2) {
+                  recordUserSearch(e.target.value.trim(), currentUser?.email);
+                }
+              }}
+              className="w-full bg-background border border-border rounded-xl pl-10 pr-4 py-2.5 text-sm text-foreground shadow-sm focus:ring-2 focus:ring-primary focus:outline-none transition-all"
+            />
+          </div>
+
+          <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
+            <span className="text-xs font-bold text-muted-foreground">Sort By:</span>
+            <select
+              value={sortBy}
+              onChange={(e: any) => setSortBy(e.target.value)}
+              className="bg-background border border-border rounded-xl px-3 py-2 text-xs font-bold text-foreground focus:ring-2 focus:ring-primary focus:outline-none cursor-pointer shadow-sm"
+            >
+              <option value="personalized">✨ Algorithmic (For You)</option>
+              <option value="featured">⭐ Featured First</option>
+              <option value="newest">🕒 Newest Added</option>
+              <option value="price-low">💵 Price: Low to High</option>
+              <option value="price-high">💎 Price: High to Low</option>
+            </select>
+          </div>
         </div>
 
         {/* Category Filters */}
@@ -633,18 +693,23 @@ function ProductsContent() {
               <button
                 key={badge}
                 onClick={() => setSelectedTagBadge(badge)}
-                className={`px-3 py-1 rounded-xl text-xs font-extrabold transition-all border ${
+                className={`px-3 py-1 rounded-xl text-xs font-black uppercase tracking-wider transition-all border cursor-pointer ${
                   isActive
-                    ? "bg-primary text-white border-primary shadow-sm"
+                    ? badge === "FEATURED"
+                      ? "bg-amber-400 text-slate-950 border-amber-400 shadow-sm"
+                      : badge === "NEW"
+                      ? "bg-emerald-500 text-slate-950 border-emerald-500 shadow-sm"
+                      : badge === "POPULAR"
+                      ? "bg-orange-500 text-white border-orange-500 shadow-sm"
+                      : badge === "TRENDING"
+                      ? "bg-cyan-400 text-slate-950 border-cyan-400 shadow-sm"
+                      : badge === "PREMIUM"
+                      ? "bg-red-600 text-white border-red-500 shadow-sm"
+                      : "bg-primary text-white border-primary shadow-sm"
                     : "bg-background/80 border-border text-muted-foreground hover:text-foreground"
                 }`}
               >
-                {badge === "all" && "All Badges"}
-                {badge === "FEATURED" && "⭐ FEATURED"}
-                {badge === "NEW" && "✨ NEW"}
-                {badge === "POPULAR" && "🔥 POPULAR"}
-                {badge === "TRENDING" && "📈 TRENDING"}
-                {badge === "PREMIUM" && "👑 PREMIUM"}
+                {badge === "all" ? "All Badges" : badge}
               </button>
             );
           })}
@@ -653,12 +718,12 @@ function ProductsContent() {
 
       <div>
         {loading ? (
-          <div className="text-center py-20 text-muted-foreground">Loading catalog items...</div>
-        ) : filteredProducts.length === 0 ? (
+          <div className="text-center py-20 text-muted-foreground">Loading personalized catalog items...</div>
+        ) : processedProducts.length === 0 ? (
           <div className="text-center py-20 text-muted-foreground">No products match your filters.</div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {filteredProducts.map((product, index) => {
+            {processedProducts.map((product, index) => {
               const inCart = isInCart(product.id);
               const gradientIndex = index % gradients.length;
               const cartItem: CartItem = {
@@ -676,6 +741,7 @@ function ProductsContent() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.3 }}
                   className="glass-panel rounded-2xl p-4 flex flex-col justify-between hover:scale-[1.02] transition-transform duration-200 border border-border relative group"
+                  onClick={() => recordProductView(product, currentUser?.email)}
                 >
                   <div>
                     <a href={`/product?id=${product.id}`}>
@@ -685,30 +751,68 @@ function ProductsContent() {
                         ) : (
                           <span className="text-white/80 text-4xl">📦</span>
                         )}
+
+                        {/* Feature Badge Overlay on Image (Replaced Match %) */}
+                        {(() => {
+                          const tagsUpper = (product.tags || []).map((t: string) => t.toUpperCase());
+                          if (product.isFeatured || tagsUpper.includes("FEATURED")) {
+                            return (
+                              <div className="absolute top-2 right-2 z-10 shadow-md">
+                                <span className="text-[10px] bg-amber-400 text-slate-950 px-2.5 py-0.5 rounded-full font-black uppercase tracking-wider">
+                                  FEATURED
+                                </span>
+                              </div>
+                            );
+                          }
+                          if (tagsUpper.includes("NEW")) {
+                            return (
+                              <div className="absolute top-2 right-2 z-10 shadow-md">
+                                <span className="text-[10px] bg-emerald-500 text-slate-950 px-2.5 py-0.5 rounded-full font-black uppercase tracking-wider">
+                                  NEW
+                                </span>
+                              </div>
+                            );
+                          }
+                          if (tagsUpper.includes("POPULAR")) {
+                            return (
+                              <div className="absolute top-2 right-2 z-10 shadow-md">
+                                <span className="text-[10px] bg-orange-500 text-white px-2.5 py-0.5 rounded-full font-black uppercase tracking-wider">
+                                  POPULAR
+                                </span>
+                              </div>
+                            );
+                          }
+                          if (tagsUpper.includes("TRENDING")) {
+                            return (
+                              <div className="absolute top-2 right-2 z-10 shadow-md">
+                                <span className="text-[10px] bg-cyan-400 text-slate-950 px-2.5 py-0.5 rounded-full font-black uppercase tracking-wider">
+                                  TRENDING
+                                </span>
+                              </div>
+                            );
+                          }
+                          if (tagsUpper.includes("PREMIUM")) {
+                            return (
+                              <div className="absolute top-2 right-2 z-10 shadow-md">
+                                <span className="text-[10px] bg-red-600 text-white px-2.5 py-0.5 rounded-full font-black uppercase tracking-wider">
+                                  PREMIUM
+                                </span>
+                              </div>
+                            );
+                          }
+                          return null;
+                        })()}
                       </div>
                     </a>
 
-                    {/* Feature Badges & Tags */}
-                    <div className="flex flex-wrap gap-1 mb-2">
-                      {product.isFeatured && !(product.tags || []).map(t=>t.toUpperCase()).includes("FEATURED") && (
-                        <span className="text-[9px] bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 px-2 py-0.5 rounded-full font-extrabold uppercase tracking-wider">
-                          ⭐ FEATURED
+                    {/* Algorithmic Reason Pill */}
+                    {sortBy === "personalized" && product.recommendationReason && (
+                      <div className="mb-2">
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 line-clamp-1">
+                          {product.recommendationReason}
                         </span>
-                      )}
-                      {(product.tags || []).map((tag) => {
-                        const uTag = tag.toUpperCase();
-                        if (uTag === "FEATURED") return <span key={tag} className="text-[9px] bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 px-2 py-0.5 rounded-full font-extrabold uppercase tracking-wider">⭐ FEATURED</span>;
-                        if (uTag === "NEW") return <span key={tag} className="text-[9px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-full font-extrabold uppercase tracking-wider">✨ NEW</span>;
-                        if (uTag === "POPULAR") return <span key={tag} className="text-[9px] bg-amber-500/20 text-amber-300 border border-amber-500/30 px-2 py-0.5 rounded-full font-extrabold uppercase tracking-wider">🔥 POPULAR</span>;
-                        if (uTag === "TRENDING") return <span key={tag} className="text-[9px] bg-sky-500/20 text-sky-300 border border-sky-500/30 px-2 py-0.5 rounded-full font-extrabold uppercase tracking-wider">📈 TRENDING</span>;
-                        if (uTag === "PREMIUM") return <span key={tag} className="text-[9px] bg-gradient-to-r from-amber-500/30 to-purple-500/30 text-amber-300 border border-amber-400/30 px-2 py-0.5 rounded-full font-extrabold uppercase tracking-wider">👑 PREMIUM</span>;
-                        return (
-                          <span key={tag} className="text-[9px] bg-muted px-1.5 py-0.5 rounded text-muted-foreground font-mono">
-                            #{tag}
-                          </span>
-                        );
-                      })}
-                    </div>
+                      </div>
+                    )}
 
                     <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold mb-1">by {product.sellerName || "Vendor"}</p>
                     <h3 className="font-bold text-lg mb-2 line-clamp-1">{product.title}</h3>
@@ -733,8 +837,11 @@ function ProductsContent() {
                       </a>
                     ) : (
                       <button
-                        onClick={() => inCart ? removeItem(product.id) : addItem(cartItem)}
-                        className={`text-xs font-bold px-4 py-2 rounded-full transition-colors ${
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          inCart ? removeItem(product.id) : addItem(cartItem);
+                        }}
+                        className={`text-xs font-bold px-4 py-2 rounded-full transition-colors cursor-pointer ${
                           inCart
                             ? "bg-primary/20 text-primary border border-primary/30"
                             : "bg-foreground text-background hover:bg-foreground/90"
